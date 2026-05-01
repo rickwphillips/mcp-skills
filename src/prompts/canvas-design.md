@@ -1,8 +1,3 @@
----
-name: canvas-design
-title: Canvas Design Philosophy
-description: Design philosophy and principles for creating original visual art — posters, illustrations, layouts — when generating PNG/PDF assets.
----
 
 # Canvas Design
 

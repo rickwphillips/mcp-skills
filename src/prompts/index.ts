@@ -1,0 +1,36 @@
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { registerAddJournalEntryPrompt } from "./add-journal-entry.js";
+import { registerBumpVersionPrompt } from "./bump-version.js";
+import { registerCanvasDesignPrompt } from "./canvas-design.js";
+import { registerCcStatusPrompt } from "./cc-status.js";
+import { registerCommanderCollectorPrompt } from "./commander-collector.js";
+import { registerDeployPrompt } from "./deploy.js";
+import { registerGrandkidArcadePrompt } from "./grandkid-arcade.js";
+import { registerMtgRulesGuruPrompt } from "./mtg-rules-guru.js";
+import { registerPdfPrompt } from "./pdf.js";
+import { registerPortfolioPrompt } from "./portfolio.js";
+import { registerRecordAudioPrompt } from "./record-audio.js";
+import { registerRequestRecordPrompt } from "./request-record.js";
+import { registerRoyalCasinoPrompt } from "./royal-casino.js";
+import { registerSaveChatPrompt } from "./save-chat.js";
+import { registerStopRecordingPrompt } from "./stop-recording.js";
+import { registerWriteRecordPrompt } from "./write-record.js";
+
+export const registerPrompts = (server: McpServer) => {
+  registerAddJournalEntryPrompt(server);
+  registerBumpVersionPrompt(server);
+  registerCanvasDesignPrompt(server);
+  registerCcStatusPrompt(server);
+  registerCommanderCollectorPrompt(server);
+  registerDeployPrompt(server);
+  registerGrandkidArcadePrompt(server);
+  registerMtgRulesGuruPrompt(server);
+  registerPdfPrompt(server);
+  registerPortfolioPrompt(server);
+  registerRecordAudioPrompt(server);
+  registerRequestRecordPrompt(server);
+  registerRoyalCasinoPrompt(server);
+  registerSaveChatPrompt(server);
+  registerStopRecordingPrompt(server);
+  registerWriteRecordPrompt(server);
+};

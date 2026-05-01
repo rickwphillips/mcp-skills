@@ -1,8 +1,3 @@
----
-name: mtg-rules-guru
-title: MTG Rules Guru
-description: Answer Magic: The Gathering rules questions, card interactions, priority and stack mechanics, combat, triggers, state-based actions, keywords, and Commander-specific rules.
----
 
 # MTG Rules Guru
 

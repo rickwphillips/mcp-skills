@@ -1,15 +1,3 @@
----
-name: save-chat
-title: Save Chat
-description: Save the current conversation as a session note, distilled to durable signal — not a transcript.
-arguments:
-  - name: notes_dir
-    description: Directory where session notes are stored.
-    required: true
-  - name: title_hint
-    description: Optional short hint about what this session was about (used in filename).
-    required: false
----
 
 # Save Chat
 

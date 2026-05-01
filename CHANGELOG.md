@@ -2,6 +2,25 @@
 
 All notable changes to mcp-skills will be documented in this file. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: [Semver](https://semver.org/).
 
+## [0.2.0] - 2026-05-01
+
+### Changed
+- **Refactored to canonical MCP server structure** matching `modelcontextprotocol/servers/src/everything/`. Switched from low-level `Server` API + hand-built `setRequestHandler` to high-level `McpServer` (`server.registerTool` / `server.registerPrompt`). One file per tool, one file per prompt, with `registerTools(server)` / `registerPrompts(server)` aggregators in `src/tools/index.ts` and `src/prompts/index.ts`. The result: agents (Copilot, Claude, etc.) recognize the structure on first read.
+- `src/server.ts` shrunk from ~200 lines to 19. Removed the `TOOLS` registry array and the dynamic `prompts/loader.ts` markdown reader.
+- Prompt bodies relocated from `prompts/*.md` (repo root) to `src/prompts/<name>.md` colocated with their TS module. The TS module loads its sibling at module init via `readFileSync`.
+- Build now copies `src/prompts/*.md` into `dist/prompts/` via `scripts/copy-prompts.mjs` so runtime can find bodies.
+
+### Added
+- 11 new prompts ported from local Claude Code skills: `cc-status`, `commander-collector`, `deploy`, `grandkid-arcade`, `pdf`, `portfolio`, `record-audio`, `request-record`, `royal-casino`, `stop-recording`, `write-record`. Total prompts: 16.
+- Shared lib modules: `src/lib/db-pool.ts` (pool management for db-read + db-write), `src/lib/pdf-pages.ts` (page-range parsing for split/extract/rotate).
+- `src/prompts/_helpers.ts` — `loadBody`, `interpolate`, `asUserMessage` shared utilities.
+
+### Removed
+- `src/prompts/loader.ts` (replaced by per-module `loadBody()` calls).
+- `src/tools/db.ts` and `src/tools/pdf.ts` (split into individual tool files).
+- Top-level `prompts/` markdown directory (moved into `src/prompts/`).
+- `prompts` entry from `package.json` `files` array (no longer published as a separate folder).
+
 ## [0.1.1] - 2026-05-01
 
 ### Added

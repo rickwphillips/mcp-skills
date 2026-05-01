@@ -1,12 +1,3 @@
----
-name: add-journal-entry
-title: Add Journal Entry
-description: Conduct a journaling session by asking thoughtful, open-ended questions and saving the resulting entry as a markdown file.
-arguments:
-  - name: journal_dir
-    description: Directory where journal entries are stored. One file per day.
-    required: true
----
 
 # Add Journal Entry
 

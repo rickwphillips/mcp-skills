@@ -1,18 +1,3 @@
----
-name: bump-version
-title: Bump Version
-description: Bump a project's semver version number, append a CHANGELOG entry, commit, and push.
-arguments:
-  - name: project_path
-    description: Filesystem path to the project root (containing package.json or similar manifest).
-    required: true
-  - name: level
-    description: "patch | minor | major"
-    required: true
-  - name: summary
-    description: One-line description of what changed in this version.
-    required: true
----
 
 # Bump Version
 
