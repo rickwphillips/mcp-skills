@@ -1,0 +1,72 @@
+{
+  "$schema_note": "Save your real config to ~/.config/mcp-skills/config.json (chmod 600). Never commit it.",
+  "auditLogPath": "~/.local/share/mcp-skills/write-audit.jsonl",
+  "pdfWorkDir": "~/.cache/mcp-skills/pdf",
+  "connections": {
+    "commander_dev": {
+      "host": "127.0.0.1",
+      "port": 3306,
+      "user": "commander_dev",
+      "password": "devpassword",
+      "database": "commander_collector",
+      "env": "dev",
+      "description": "Local Commander Collector DB"
+    },
+    "auth_dev": {
+      "host": "127.0.0.1",
+      "user": "commander_dev",
+      "password": "devpassword",
+      "database": "rickwphillips_auth",
+      "env": "dev",
+      "description": "Local auth DB (users, sessions)"
+    },
+    "portfolio_dev": {
+      "host": "127.0.0.1",
+      "user": "commander_dev",
+      "password": "devpassword",
+      "database": "rickwphi_app_portfolio",
+      "env": "dev",
+      "description": "Local portfolio DB"
+    },
+    "grandkid_dev": {
+      "host": "127.0.0.1",
+      "user": "app_user",
+      "password": "devpassword",
+      "database": "grandkid_arcade",
+      "env": "dev",
+      "description": "Local grandkid arcade DB"
+    },
+    "commander_prod": {
+      "host": "127.0.0.1",
+      "user": "REPLACE_ME",
+      "password": "REPLACE_ME",
+      "database": "rickwphi_app_commander",
+      "env": "prod",
+      "description": "Production Commander Collector — requires CONFIRM on writes"
+    },
+    "auth_prod": {
+      "host": "127.0.0.1",
+      "user": "REPLACE_ME",
+      "password": "REPLACE_ME",
+      "database": "rickwphi_app_auth",
+      "env": "prod",
+      "description": "Production auth DB"
+    },
+    "portfolio_prod": {
+      "host": "127.0.0.1",
+      "user": "REPLACE_ME",
+      "password": "REPLACE_ME",
+      "database": "rickwphi_app_portfolio",
+      "env": "prod",
+      "description": "Production portfolio DB"
+    },
+    "grandkid_prod": {
+      "host": "127.0.0.1",
+      "user": "REPLACE_ME",
+      "password": "REPLACE_ME",
+      "database": "rickwphi_app_grandkid",
+      "env": "prod",
+      "description": "Production grandkid arcade DB"
+    }
+  }
+}

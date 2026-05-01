@@ -1,0 +1,44 @@
+{
+  "name": "mcp-skills",
+  "version": "0.1.0",
+  "description": "Agent-agnostic MCP server exposing reusable database, PDF, and workflow skills as Tools and Prompts.",
+  "license": "MIT",
+  "author": "Rick Phillips",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rickwphillips/mcp-skills.git"
+  },
+  "type": "module",
+  "bin": {
+    "mcp-skills": "dist/server.js"
+  },
+  "files": [
+    "dist",
+    "prompts",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "mysql2": "^3.11.5",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
