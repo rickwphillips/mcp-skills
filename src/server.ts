@@ -35,6 +35,7 @@ import {
 } from "./tools/pdf.js";
 import { loadPrompts } from "./prompts/loader.js";
 import { getVersionInfo } from "./version.js";
+import { backgroundBootCheck, checkForUpdates } from "./update-check.js";
 
 const versionInfo = getVersionInfo();
 
@@ -66,10 +67,22 @@ const TOOLS = [
   tool({
     name: "get_version",
     description:
-      "Returns the mcp-skills server version and the most recent CHANGELOG entries. " +
-      "Call this at session start to detect when the server has been updated and your client should reload.",
+      "Returns the mcp-skills server version, the most recent CHANGELOG entries, and the result of the latest update check (cached up to 1 hour). " +
+      "Call this at session start. If `update_status` is 'behind', surface the message to the user and ask before running `upgrade_command`.",
     schema: z.object({}),
-    handler: async () => JSON.stringify(getVersionInfo(), null, 2),
+    handler: async () => {
+      const info = getVersionInfo();
+      const updateCheck = await checkForUpdates(false);
+      return JSON.stringify({ ...info, update_check: updateCheck }, null, 2);
+    },
+  }),
+  tool({
+    name: "check_for_updates",
+    description:
+      "Force a fresh check of GitHub for a newer mcp-skills release (bypasses the 1-hour cache). " +
+      "Returns the current version, latest tag/release, and an upgrade command if behind. Never runs the upgrade itself — ask the user first.",
+    schema: z.object({}),
+    handler: async () => JSON.stringify(await checkForUpdates(true), null, 2),
   }),
   tool({
     name: "list_db_connections",
@@ -217,6 +230,8 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
     ],
   };
 });
+
+backgroundBootCheck();
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

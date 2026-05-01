@@ -2,6 +2,13 @@
 
 All notable changes to mcp-skills will be documented in this file. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: [Semver](https://semver.org/).
 
+## [0.1.1] - 2026-05-01
+
+### Added
+- Online update check on boot (logged to stderr) and via `get_version` (cached 1 hour) and `check_for_updates` (forces a fresh check).
+- Update check shells to `gh release view` → falls back to `gh api /tags` → `git ls-remote --tags`. Uses your existing `gh` auth — no token to manage.
+- `get_version` response now includes an `update_check` block with `current_version`, `latest_version`, `update_status` (`current` | `behind` | `ahead` | `unknown` | `error`), and an `upgrade_command` when behind. Never runs the upgrade automatically.
+
 ## [0.1.0] - 2026-05-01
 
 Initial release. Agent-agnostic MCP server consolidating reusable database, PDF, and workflow skills.
