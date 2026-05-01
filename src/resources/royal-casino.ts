@@ -1,10 +1,13 @@
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-# Royal Casino — Project Skill
+const URI = "skills://project/royal-casino";
+
+const BODY = `# Royal Casino — Project Skill
 
 ## Project Locations
-- **Game project**: `Casino-v0.0.1/` (Unity)
-- **Tutorial/reference**: `Conn-Casino/` (Unity)
-- **Docs & planning**: `royal-casino/` (in FreddyRhetorickProjects)
+- **Game project**: \`Casino-v0.0.1/\` (Unity)
+- **Tutorial/reference**: \`Conn-Casino/\` (Unity)
+- **Docs & planning**: \`royal-casino/\` (in FreddyRhetorickProjects)
 
 ## Stack
 - **Engine**: Unity 2022+ LTS · **Language**: C# · **Architecture**: ScriptableObject-based rule configs
@@ -44,22 +47,22 @@ Fishing-style card game (Casino family). Key difference from standard Casino: **
 | Each Sweep | 1 |
 **Win at 21 points.**
 
-## Current Script Structure (`Casino-v0.0.1/Assets/Scripts/`)
-- `GameDeck.cs` — deck management
-- `GameManager.cs` — game flow and turn state
-- `GamePlayer.cs` — player data and hand
-- `PlayingCard.cs` — card model
-- `UIManager.cs` — UI display
+## Current Script Structure (\`Casino-v0.0.1/Assets/Scripts/\`)
+- \`GameDeck.cs\` — deck management
+- \`GameManager.cs\` — game flow and turn state
+- \`GamePlayer.cs\` — player data and hand
+- \`PlayingCard.cs\` — card model
+- \`UIManager.cs\` — UI display
 
-## Conn-Casino Reference Scripts (`Conn-Casino/Assets/Scripts/`)
+## Conn-Casino Reference Scripts (\`Conn-Casino/Assets/Scripts/\`)
 Reuse patterns from here — avoid re-inventing:
-- `GameManager.cs` (27.9K) — singleton pattern, turn-based state machine
-- `AIPlayer.cs` (12.4K) — Easy/Medium/Hard difficulty architecture
-- `UIManager.cs` (25.5K) — full UI implementation
-- `CaptureChecker.cs` — capture combination algorithm
-- `ScoringManager.cs` + `ScoringConfig.cs` + `ScoreVariables.cs` — ScriptableObject scoring system
-- `Build.cs` — build ownership and modification rules
-- `GameLogger.cs` — logging/debugging utility
+- \`GameManager.cs\` (27.9K) — singleton pattern, turn-based state machine
+- \`AIPlayer.cs\` (12.4K) — Easy/Medium/Hard difficulty architecture
+- \`UIManager.cs\` (25.5K) — full UI implementation
+- \`CaptureChecker.cs\` — capture combination algorithm
+- \`ScoringManager.cs\` + \`ScoringConfig.cs\` + \`ScoreVariables.cs\` — ScriptableObject scoring system
+- \`Build.cs\` — build ownership and modification rules
+- \`GameLogger.cs\` — logging/debugging utility
 
 ## Architecture Plan
 
@@ -72,22 +75,22 @@ Reuse patterns from here — avoid re-inventing:
 6. **Game State Manager** — Turn rotation, hand dealing, scoring, win detection
 
 ### ScriptableObject Rule Sets (planned)
-```
+\`\`\`
 Assets/ScriptableObjects/RuleSets/
 ├── RoyalCasino_Dominican.asset
 ├── RoyalCasino_NorthAmerican.asset
 └── RoyalCasino_Hungarian.asset
-```
+\`\`\`
 
 ### File Organization (planned)
-```
+\`\`\`
 Assets/Scripts/
 ├── Core/        Card.cs · Deck.cs · GameManager.cs
 ├── Rules/       RuleSet.cs · CaptureEngine.cs · BuildSystem.cs
 ├── AI/          AIPlayer.cs · Strategies/
 ├── Scoring/     ScoringManager.cs
 └── UI/
-```
+\`\`\`
 
 ## What to Reuse from Conn-Casino
 - GameManager singleton + turn state machine
@@ -112,4 +115,21 @@ Assets/Scripts/
 
 ## Reference
 - **Rules**: https://www.pagat.com/fishing/royal_casino.html
-- **Planning docs**: `royal-casino/.claude/context.md`
+- **Planning docs**: \`royal-casino/.claude/context.md\`
+`;
+
+export const registerRoyalCasinoResource = (server: McpServer) => {
+  server.registerResource(
+    "royal-casino",
+    URI,
+    {
+      title: "Royal Casino — Project Context",
+      description:
+        "Project context for Royal Casino (Unity card game): rules, variants, scoring, architecture, roadmap.",
+      mimeType: "text/markdown",
+    },
+    async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: "text/markdown", text: BODY }],
+    }),
+  );
+};

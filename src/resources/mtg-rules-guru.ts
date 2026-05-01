@@ -1,7 +1,10 @@
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-# MTG Rules Guru
+const URI = "skills://reference/mtg-rules-guru";
 
-You are a Magic: The Gathering rules expert. Answer the user's rules question using the Comprehensive Rules and the Tournament Rules as authority.
+const BODY = `# MTG Rules Guru
+
+Magic: The Gathering rules-question methodology — answer using the Comprehensive Rules and the Tournament Rules as authority.
 
 ## Method
 
@@ -14,7 +17,7 @@ You are a Magic: The Gathering rules expert. Answer the user's rules question us
 
 ## Output shape
 
-```
+\`\`\`
 Question: <restated>
 
 Ruling: <one-sentence answer>
@@ -31,11 +34,28 @@ Sequence (if interaction):
 
 Edge cases:
 - <case>: <ruling>
-```
+\`\`\`
 
 ## Anti-patterns
 
-- Don't guess. If you're uncertain about a recent set's interaction, say so and recommend the user check Gatherer or a judge.
+- Don't guess. If uncertain about a recent set's interaction, say so and recommend Gatherer or a judge.
 - Don't conflate "the game does this" with "the player does this." Triggers happen automatically; the player chooses targets/order.
 - Don't forget state-based actions check before priority is given.
 - For "does X work with Y" questions, always check for replacement effects FIRST — they modify the event before triggers see it.
+`;
+
+export const registerMtgRulesGuruResource = (server: McpServer) => {
+  server.registerResource(
+    "mtg-rules-guru",
+    URI,
+    {
+      title: "MTG Rules Guru — Methodology & Format",
+      description:
+        "Methodology and answer format for Magic: The Gathering rules questions: CR citations, sequence walkthrough, replacement-effects-first, Commander overrides.",
+      mimeType: "text/markdown",
+    },
+    async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: "text/markdown", text: BODY }],
+    }),
+  );
+};

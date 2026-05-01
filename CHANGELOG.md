@@ -2,6 +2,41 @@
 
 All notable changes to mcp-skills will be documented in this file. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: [Semver](https://semver.org/).
 
+## [0.3.0] - 2026-05-01
+
+### Changed
+- **Eliminated all prompts in favor of tools and resources.** Per MCP best practice for agent-agnostic, slash-discoverable servers: deterministic workflows belong as tools (the agent calls them, predictable code runs); static reference material belongs as resources (the agent reads them on demand). Prompts only earn their keep when they inject content the agent doesn't already have — none of the v0.2.0 prompts qualified.
+- Total inventory: **19 tools + 6 resources + 0 prompts** (was 12 tools + 16 prompts).
+
+### Added — Tools
+- `cc_status` — version-gap check between local `package.json`, dev DB, and prod DB for Commander Collector. Native MySQL queries, structured JSON output.
+- `record_audio` — start ffmpeg recording of Mac system audio via BlackHole 2ch. Refuses if a recording is already in progress.
+- `stop_recording` — stop the active recording, finalize the m4a, return file size.
+- `bump_version` — detect manifest (package.json / Cargo.toml / composer.json / pyproject.toml / VERSION), bump semver, prepend dated CHANGELOG entry, git-commit. Never pushes automatically.
+- `deploy` — deploy commander/portfolio/grandkid/all via hardcoded deploy.sh paths. Preflight-checks git tree clean and commander migration file location; bypassable via `skip_preflight`.
+- `save_journal_entry` — persist a journal entry to `<journal_dir>/<YYYY-MM-DD>.md`. Refuses to overwrite unless `append=true`.
+- `save_session_note` — persist a distilled session note with standard frontmatter (`name`, `description`, `type`).
+
+### Added — Resources
+- `skills://project/commander-collector` — Commander Collector project context.
+- `skills://project/grandkid-arcade` — Grandkid Arcade project context.
+- `skills://project/portfolio` — rickwphillips.com portfolio project context.
+- `skills://project/royal-casino` — Royal Casino Unity game project context.
+- `skills://reference/canvas-design` — Design philosophy for original visual work.
+- `skills://reference/mtg-rules-guru` — MTG rules-question methodology and answer format.
+
+All resource bodies inlined as string literals in `src/resources/<name>.ts` (no `.md` sidecars; build no longer needs to copy markdown).
+
+### Removed
+- `src/prompts/` directory and all 16 prompt registrations.
+- `scripts/copy-prompts.mjs` build step.
+- `registerPrompts` import and call in `src/server.ts`.
+- 5 prompts that became tools: `cc-status`, `record-audio`, `stop-recording`, `bump-version`, `deploy`.
+- 4 prompts that became resources: `commander-collector`, `grandkid-arcade`, `portfolio`, `royal-casino`.
+- 2 prompts converted to tools+resources combo: `add-journal-entry` → `save_journal_entry` tool; `save-chat` → `save_session_note` tool; their guidance moved into tool descriptions.
+- 2 prompts converted to resources: `canvas-design`, `mtg-rules-guru`.
+- 3 redundant wrappers: `pdf` (existing `pdf_*` tools cover it), `request-record` (existing `db_read`), `write-record` (existing `db_write`).
+
 ## [0.2.0] - 2026-05-01
 
 ### Changed

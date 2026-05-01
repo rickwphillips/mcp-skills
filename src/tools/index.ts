@@ -11,6 +11,13 @@ import { registerPdfRotateTool } from "./pdf-rotate.js";
 import { registerPdfWatermarkTool } from "./pdf-watermark.js";
 import { registerPdfEncryptTool } from "./pdf-encrypt.js";
 import { registerPdfDecryptTool } from "./pdf-decrypt.js";
+import { registerCcStatusTool } from "./cc-status.js";
+import { registerRecordAudioTool } from "./record-audio.js";
+import { registerStopRecordingTool } from "./stop-recording.js";
+import { registerBumpVersionTool } from "./bump-version.js";
+import { registerDeployTool } from "./deploy.js";
+import { registerSaveJournalEntryTool } from "./save-journal-entry.js";
+import { registerSaveSessionNoteTool } from "./save-session-note.js";
 
 export const registerTools = (server: McpServer) => {
   registerGetVersionTool(server);
@@ -25,4 +32,11 @@ export const registerTools = (server: McpServer) => {
   registerPdfWatermarkTool(server);
   registerPdfEncryptTool(server);
   registerPdfDecryptTool(server);
+  registerCcStatusTool(server);
+  registerRecordAudioTool(server);
+  registerStopRecordingTool(server);
+  registerBumpVersionTool(server);
+  registerDeployTool(server);
+  registerSaveJournalEntryTool(server);
+  registerSaveSessionNoteTool(server);
 };

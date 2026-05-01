@@ -1,5 +1,8 @@
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-# Canvas Design
+const URI = "skills://reference/canvas-design";
+
+const BODY = `# Canvas Design
 
 Design original visual work. Never copy or mimic identifiable artists' styles to avoid copyright issues — synthesize from principles.
 
@@ -40,3 +43,20 @@ Design original visual work. Never copy or mimic identifiable artists' styles to
 ## When the user gives no constraints
 
 Default to: 16:9, dark background, single focal element, off-center per rule-of-thirds, 2 colors + 1 accent + neutrals, sans-serif display + lighter sans body, generous negative space.
+`;
+
+export const registerCanvasDesignResource = (server: McpServer) => {
+  server.registerResource(
+    "canvas-design",
+    URI,
+    {
+      title: "Canvas Design — Principles",
+      description:
+        "Design philosophy for original visual work: hierarchy, negative space, typography, color, contrast, anti-patterns.",
+      mimeType: "text/markdown",
+    },
+    async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: "text/markdown", text: BODY }],
+    }),
+  );
+};
