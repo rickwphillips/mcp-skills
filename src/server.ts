@@ -5,13 +5,19 @@ import { registerTools } from "./tools/index.js";
 import { registerResources } from "./resources/index.js";
 import { getVersionInfo } from "./version.js";
 import { backgroundBootCheck } from "./update-check.js";
+import { SERVER_INSTRUCTIONS } from "./instructions.js";
 
 const versionInfo = getVersionInfo();
 
-const server = new McpServer({
-  name: versionInfo.name,
-  version: versionInfo.version,
-});
+const server = new McpServer(
+  {
+    name: versionInfo.name,
+    version: versionInfo.version,
+  },
+  {
+    instructions: SERVER_INSTRUCTIONS,
+  },
+);
 
 registerTools(server);
 registerResources(server);

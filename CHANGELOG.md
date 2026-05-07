@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.0] - 2026-05-07
+
+- Add MCP server-instructions block (auto-injected at connect) advertising verification mindset, db_write/deploy safety patterns, and adjacent browser surfaces (Playwright MCP, scratch specs, computer-use tier rules). README cleaned up to remove stale Prompts framing and document the new instructions feature.
+
 All notable changes to mcp-skills will be documented in this file. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: [Semver](https://semver.org/).
 
 ## [0.3.0] - 2026-05-01
