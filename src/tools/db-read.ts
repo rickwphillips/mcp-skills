@@ -37,7 +37,7 @@ export const registerDbReadTool = (server: McpServer) => {
     async ({ connection, query, params }) => {
       const conn = getConnection(connection);
       const env = conn.env ?? "dev";
-      const pool = getPool(connection);
+      const pool = await getPool(connection);
       try {
         const [rows] = await pool.query(query, params ?? []);
         const arr = Array.isArray(rows) ? rows : [];

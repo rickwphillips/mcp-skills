@@ -1,14 +1,48 @@
 import mysql from "mysql2/promise";
-import { getConnection } from "../config/connections.js";
+import { getConnection, type ConnectionConfig } from "../config/connections.js";
+import { executeViaSsh, type QueryResult } from "./ssh-mysql.js";
 
-const pools = new Map<string, mysql.Pool>();
+export interface QueryRunner {
+  query(sql: string, params?: unknown[]): Promise<[unknown, unknown]>;
+}
 
-export function getPool(connectionName: string): mysql.Pool {
-  let pool = pools.get(connectionName);
-  if (pool) return pool;
+const runners = new Map<string, Promise<QueryRunner>>();
 
+function buildMysql2Runner(pool: mysql.Pool): QueryRunner {
+  return {
+    async query(sql, params) {
+      return pool.query(sql, params ?? []);
+    },
+  };
+}
+
+function buildSshRunner(conn: ConnectionConfig & { ssh: NonNullable<ConnectionConfig["ssh"]> }): QueryRunner {
+  return {
+    async query(sql, params) {
+      const result: QueryResult = await executeViaSsh(
+        conn,
+        sql,
+        (params ?? []) as (string | number | boolean | null)[],
+      );
+      if (result.rows !== undefined) {
+        return [result.rows, []];
+      }
+      const header = {
+        affectedRows: result.affectedRows ?? 0,
+        insertId: result.insertId ?? 0,
+        warningStatus: 0,
+      } as unknown as mysql.ResultSetHeader;
+      return [header, []];
+    },
+  };
+}
+
+async function buildRunner(connectionName: string): Promise<QueryRunner> {
   const conn = getConnection(connectionName);
-  pool = mysql.createPool({
+  if (conn.ssh) {
+    return buildSshRunner(conn as ConnectionConfig & { ssh: NonNullable<ConnectionConfig["ssh"]> });
+  }
+  const pool = mysql.createPool({
     host: conn.host,
     port: conn.port ?? 3306,
     user: conn.user,
@@ -19,6 +53,14 @@ export function getPool(connectionName: string): mysql.Pool {
     multipleStatements: false,
     charset: "utf8mb4",
   });
-  pools.set(connectionName, pool);
-  return pool;
+  return buildMysql2Runner(pool);
+}
+
+export function getPool(connectionName: string): Promise<QueryRunner> {
+  let promise = runners.get(connectionName);
+  if (promise) return promise;
+  promise = buildRunner(connectionName);
+  runners.set(connectionName, promise);
+  promise.catch(() => runners.delete(connectionName));
+  return promise;
 }

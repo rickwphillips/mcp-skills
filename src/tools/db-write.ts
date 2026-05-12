@@ -99,7 +99,7 @@ export const registerDbWriteTool = (server: McpServer) => {
         };
       }
 
-      const pool = getPool(connection);
+      const pool = await getPool(connection);
       try {
         const [result] = await pool.query(query, params ?? []);
         const okResult = result as mysql.ResultSetHeader;

@@ -10,7 +10,11 @@ export interface ConnectionConfig {
   database: string;
   ssh?: {
     host: string;
-    user?: string;
+    port?: number;
+    user: string;
+    privateKey?: string;
+    remoteHost?: string;
+    remotePort?: number;
   };
   env?: "dev" | "prod";
   description?: string;

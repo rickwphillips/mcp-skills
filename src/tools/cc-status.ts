@@ -31,7 +31,7 @@ interface ChangeRow {
 const fetchEnv = async (connectionName: string, scope: "latest" | "all") => {
   const releaseLimit = scope === "all" ? 3 : 1;
   const changeLimit = scope === "all" ? 60 : 20;
-  const pool = getPool(connectionName);
+  const pool = await getPool(connectionName);
   const conn = getConnection(connectionName);
 
   const [releaseRows] = await pool.query(
