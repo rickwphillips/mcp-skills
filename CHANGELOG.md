@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.0] - 2026-05-12
+
+- Route prod db_read/db_write through SSH-shellout (ssh host mysql --batch). Detected via the `ssh:` field on a connection. Adds src/lib/ssh-mysql.ts with prepared-statement param binding via SET @p = FROM_BASE64(...) + PREPARE/EXECUTE for safe scalar passthrough. db-pool.ts now returns a unified QueryRunner; mysql2 pool for dev, ssh shellout for prod. Resolves the cPanel-blocks-forwarded-mysql constraint without exposing any new PHP or service on prod.
+
 ## [0.4.0] - 2026-05-07
 
 - Add MCP server-instructions block (auto-injected at connect) advertising verification mindset, db_write/deploy safety patterns, and adjacent browser surfaces (Playwright MCP, scratch specs, computer-use tier rules). README cleaned up to remove stale Prompts framing and document the new instructions feature.
