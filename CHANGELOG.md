@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.0] - 2026-05-13
+
+- v1.0.0 release: API stability commitment. Full README rewrite covering the v0.6-v0.9 trajectory (audit pipeline, self-healing _steering, health-agent skill, get_boot, worktree skill, SSH-shellout adapter for prod, testing). Documents which tool signatures + JSON shapes are now frozen (signature changes require major bump) and which surfaces remain internal. Example config now includes ssh: blocks on prod connections so new users see the shellout path out of the box. No new tools or behavior changes from v0.9.0; this release is the API stability commitment + docs polish.
+
 ## [0.9.0] - 2026-05-13
 
 - Worktree skill + helper script. New get_worktree_skill tool returns the canonical proposal workflow (when to propose, when to skip, how to phrase the 2-3 line ask, soft/hard decline handling, on-approval steps). Embeds the repo-agnostic scripts/worktree.sh helper that auto-detects the current repo via git rev-parse and creates worktrees in a sibling <repo>-wt/ directory with npm ci + npm run build for Node projects. SERVER_INSTRUCTIONS gets a reactive-trigger sentence so honoring clients fetch the skill on context-switch language. Ported from newsbank-mcp v3.11.0.
