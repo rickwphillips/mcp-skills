@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.0] - 2026-05-13
+
+- Reactive get_health_agent_skill tool returning the canonical error-triage workflow as prose: when to engage, triage steps (pull data, investigate, report, approve, resolve), how to react to each _steering recommendation value, mid-investigation vs resolved-note distinction, and mcp-skills-specific tool surfaces (db_read/db_write/deploy/cc_status/save_*/PDF). SERVER_INSTRUCTIONS gets a reactive-trigger sentence so honoring clients (Claude Code / Desktop / Cursor) fetch the skill automatically when they see a _steering payload. Ported from newsbank-mcp v3.9.0's get_health_agent_skill.
+
 ## [0.6.0] - 2026-05-13
 
 - Audit foundation: structured JSON-line logger (stderr + per-PID file + 7-day prune + secret redaction), per-tool telemetry via registerTool wrapper, swallowed-error capture for {error}/{errors}/{status:'error'}/{ok:false} envelopes, durable audit sink at ~/.local/share/mcp-skills/audit/errors.jsonl, summarize_mcp_errors with signature normalization (tickets/numbers/paths/URLs/hashes stripped) and pattern rollup to patterns.json with age-based retention, mark_mcp_pattern_resolved with regression detection via reopen_count, self-healing _steering payload that injects prior triage notes inline on recurrence, record_pattern_note and mark_pattern_note tools, and auto-demotion of stale notes after 3 further recurrences. Ported from newsbank-mcp's v3.8-v3.12 audit architecture (Rick's self-healing design).
