@@ -29,6 +29,21 @@ Preflight gates run by default: git-tree-clean check + commander migration file 
 
 Commander migration files MUST live in \`commander-collector/migrations/v{version}.sql\` at the repo root. Wrong location (e.g., \`apps/core/migrations/\`) = silently skipped by the deploy script, no error. The preflight gate catches this before the deploy runs.
 
+## Error handling and self-healing audit
+
+This server runs every tool call through a telemetry wrapper that detects swallowed-error envelopes (\`{error}\`, \`{errors}\`, \`{status:'error'}\`, \`{ok:false}\`, \`isError:true\`) and records them to a durable audit sink. When a normalized error signature recurs (count >= 2 or any \`reopen_count > 0\`), the wrapper injects a \`_steering\` payload into the response:
+
+\`\`\`
+_steering: {
+  pattern_id, count, reopen_count, severity,
+  active_notes: [{ id, ts, body }, ...],
+  superseded_count,
+  recommendation: 'apply_active_notes' | 'fresh_triage' | 'first_occurrence'
+}
+\`\`\`
+
+**Reactive trigger:** when you see a \`_steering\` payload in a tool response, or when a tool errors and you suspect it may have been seen before, fetch \`get_health_agent_skill\` for the canonical triage workflow. Don't loop on the same pattern within a session. Use \`summarize_mcp_errors\` to see all open patterns, \`record_pattern_note\` to leave triage findings for the next agent, and \`mark_mcp_pattern_resolved\` after shipping a fix.
+
 ## Adjacent capabilities (not in this server)
 
 - **\`mcp__computer-use__*\`** — native Mac apps only. Browsers are tier-restricted ("read" tier: visible but not clickable); never use computer-use for browser interaction. For a browser, use Playwright MCP or claude-in-chrome MCP instead.
