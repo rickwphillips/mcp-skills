@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.8.0] - 2026-05-13
+
+- get_boot aggregator tool: returns server name+version, log/audit paths, all configured DB connections (with env + via_ssh flag), and the 3 most recent CHANGELOG entries. Quietly attaches an mcp_health block only when there are open error patterns (quiet-by-default per newsbank's pattern). Establishes the canonical fresh-agent context surface that future quiet-by-default annotations can hang off of.
+
 ## [0.7.0] - 2026-05-13
 
 - Reactive get_health_agent_skill tool returning the canonical error-triage workflow as prose: when to engage, triage steps (pull data, investigate, report, approve, resolve), how to react to each _steering recommendation value, mid-investigation vs resolved-note distinction, and mcp-skills-specific tool surfaces (db_read/db_write/deploy/cc_status/save_*/PDF). SERVER_INSTRUCTIONS gets a reactive-trigger sentence so honoring clients (Claude Code / Desktop / Cursor) fetch the skill automatically when they see a _steering payload. Ported from newsbank-mcp v3.9.0's get_health_agent_skill.
