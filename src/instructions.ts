@@ -44,6 +44,10 @@ _steering: {
 
 **Reactive trigger:** when you see a \`_steering\` payload in a tool response, or when a tool errors and you suspect it may have been seen before, fetch \`get_health_agent_skill\` for the canonical triage workflow. Don't loop on the same pattern within a session. Use \`summarize_mcp_errors\` to see all open patterns, \`record_pattern_note\` to leave triage findings for the next agent, and \`mark_mcp_pattern_resolved\` after shipping a fix.
 
+## Worktree proposals on context switches
+
+When the operator describes a context switch ("while X is still in flight", "hotfix on top of Y", "compare old vs new"), or when you are about to start source changes on a repo that has uncommitted work, fetch \`get_worktree_skill\` for the canonical worktree-proposal workflow. The skill covers trigger heuristics, proposal phrasing, soft/hard decline behavior, and embeds a repo-agnostic \`scripts/worktree.sh\` helper. Stay silent when the repo is clean on main, edits are docs-only, or the operator has previously declined for similar triggers.
+
 ## Adjacent capabilities (not in this server)
 
 - **\`mcp__computer-use__*\`** — native Mac apps only. Browsers are tier-restricted ("read" tier: visible but not clickable); never use computer-use for browser interaction. For a browser, use Playwright MCP or claude-in-chrome MCP instead.

@@ -21,6 +21,7 @@ import { registerSaveSessionNoteTool } from "./save-session-note.js";
 import { registerAuditTools } from "./audit.js";
 import { registerHealthAgentSkillTool } from "./health.js";
 import { registerGetBootTool } from "./boot.js";
+import { registerWorktreeSkillTool } from "./worktree.js";
 
 export const registerTools = (server: McpServer) => {
   registerGetVersionTool(server);
@@ -45,4 +46,5 @@ export const registerTools = (server: McpServer) => {
   registerAuditTools(server);
   registerHealthAgentSkillTool(server);
   registerGetBootTool(server);
+  registerWorktreeSkillTool(server);
 };
