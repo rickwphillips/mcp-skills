@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.0] - 2026-05-13
+
+- Worktree skill + helper script. New get_worktree_skill tool returns the canonical proposal workflow (when to propose, when to skip, how to phrase the 2-3 line ask, soft/hard decline handling, on-approval steps). Embeds the repo-agnostic scripts/worktree.sh helper that auto-detects the current repo via git rev-parse and creates worktrees in a sibling <repo>-wt/ directory with npm ci + npm run build for Node projects. SERVER_INSTRUCTIONS gets a reactive-trigger sentence so honoring clients fetch the skill on context-switch language. Ported from newsbank-mcp v3.11.0.
+
 ## [0.8.0] - 2026-05-13
 
 - get_boot aggregator tool: returns server name+version, log/audit paths, all configured DB connections (with env + via_ssh flag), and the 3 most recent CHANGELOG entries. Quietly attaches an mcp_health block only when there are open error patterns (quiet-by-default per newsbank's pattern). Establishes the canonical fresh-agent context surface that future quiet-by-default annotations can hang off of.
