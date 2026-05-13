@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.6.0] - 2026-05-13
+
+- Audit foundation: structured JSON-line logger (stderr + per-PID file + 7-day prune + secret redaction), per-tool telemetry via registerTool wrapper, swallowed-error capture for {error}/{errors}/{status:'error'}/{ok:false} envelopes, durable audit sink at ~/.local/share/mcp-skills/audit/errors.jsonl, summarize_mcp_errors with signature normalization (tickets/numbers/paths/URLs/hashes stripped) and pattern rollup to patterns.json with age-based retention, mark_mcp_pattern_resolved with regression detection via reopen_count, self-healing _steering payload that injects prior triage notes inline on recurrence, record_pattern_note and mark_pattern_note tools, and auto-demotion of stale notes after 3 further recurrences. Ported from newsbank-mcp's v3.8-v3.12 audit architecture (Rick's self-healing design).
+
 ## [0.5.0] - 2026-05-12
 
 - Route prod db_read/db_write through SSH-shellout (ssh host mysql --batch). Detected via the `ssh:` field on a connection. Adds src/lib/ssh-mysql.ts with prepared-statement param binding via SET @p = FROM_BASE64(...) + PREPARE/EXECUTE for safe scalar passthrough. db-pool.ts now returns a unified QueryRunner; mysql2 pool for dev, ssh shellout for prod. Resolves the cPanel-blocks-forwarded-mysql constraint without exposing any new PHP or service on prod.
