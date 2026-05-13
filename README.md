@@ -113,7 +113,7 @@ When a normalized signature recurs (count >= 2 or any `reopen_count`), the wrapp
 
 ## SSH-shellout for prod databases (v0.5.0+)
 
-cPanel and similar shared hosts filter forwarded TCP connections to mysql, regardless of forwarding mode (TCP `-L`, unix-socket `-L`, or library-level tunneling). To work around this without exposing any new prod-side code, prod connections marked with an `ssh:` block route through `src/lib/ssh-mysql.ts`:
+Some hosting environments restrict direct TCP access to mysql. To keep prod connections working without exposing any new prod-side service, connections marked with an `ssh:` block route through `src/lib/ssh-mysql.ts`:
 
 ```jsonc
 {
