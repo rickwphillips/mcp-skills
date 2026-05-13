@@ -20,6 +20,7 @@ import { registerSaveJournalEntryTool } from "./save-journal-entry.js";
 import { registerSaveSessionNoteTool } from "./save-session-note.js";
 import { registerAuditTools } from "./audit.js";
 import { registerHealthAgentSkillTool } from "./health.js";
+import { registerGetBootTool } from "./boot.js";
 
 export const registerTools = (server: McpServer) => {
   registerGetVersionTool(server);
@@ -43,4 +44,5 @@ export const registerTools = (server: McpServer) => {
   registerSaveSessionNoteTool(server);
   registerAuditTools(server);
   registerHealthAgentSkillTool(server);
+  registerGetBootTool(server);
 };
