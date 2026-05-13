@@ -18,6 +18,7 @@ import { registerBumpVersionTool } from "./bump-version.js";
 import { registerDeployTool } from "./deploy.js";
 import { registerSaveJournalEntryTool } from "./save-journal-entry.js";
 import { registerSaveSessionNoteTool } from "./save-session-note.js";
+import { registerAuditTools } from "./audit.js";
 
 export const registerTools = (server: McpServer) => {
   registerGetVersionTool(server);
@@ -39,4 +40,5 @@ export const registerTools = (server: McpServer) => {
   registerDeployTool(server);
   registerSaveJournalEntryTool(server);
   registerSaveSessionNoteTool(server);
+  registerAuditTools(server);
 };
