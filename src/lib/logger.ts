@@ -14,7 +14,7 @@ const LEVEL_RANK: Record<LogLevel, number> = {
 const REDACT_KEY = /token|password|cookie|authorization|secret|api[_-]?key/i;
 const REDACT_VALUE = /\b(glpat-[A-Za-z0-9_-]+|gloas-[A-Za-z0-9_-]+|ATATT[A-Za-z0-9_-]+)\b/g;
 
-function redact(value: unknown, depth = 0): unknown {
+export function redact(value: unknown, depth = 0): unknown {
   if (depth > 6) return "[depth-limit]";
   if (value == null) return value;
   if (typeof value === "string") return value.replace(REDACT_VALUE, "[REDACTED]");
@@ -46,7 +46,11 @@ interface LoggerOptions {
   auditPath: string;
 }
 
-const SHARE_DIR = path.join(os.homedir(), ".local", "share", "mcp-skills");
+// Allow tests (and advanced users) to redirect the storage tree away from
+// ~/.local/share/mcp-skills via MCP_SKILLS_HOME. The default keeps the
+// canonical path so production usage is unchanged.
+const SHARE_DIR =
+  process.env.MCP_SKILLS_HOME ?? path.join(os.homedir(), ".local", "share", "mcp-skills");
 export const AUDIT_DIR = path.join(SHARE_DIR, "audit");
 export const AUDIT_ERRORS_PATH = path.join(AUDIT_DIR, "errors.jsonl");
 const LOG_DIR = path.join(SHARE_DIR, "logs");

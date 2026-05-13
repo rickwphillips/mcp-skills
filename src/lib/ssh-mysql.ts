@@ -22,7 +22,7 @@ function isReadOnlyStatement(sql: string): boolean {
   );
 }
 
-function buildScript(sql: string, params: (string | number | boolean | null)[]): { script: string; isSelect: boolean } {
+export function buildScript(sql: string, params: (string | number | boolean | null)[]): { script: string; isSelect: boolean } {
   const isSelect = isReadOnlyStatement(sql);
   const lines: string[] = [];
   params.forEach((p, i) => {
@@ -74,7 +74,7 @@ function decodeBatchValue(s: string): unknown {
   });
 }
 
-function parseBatchOutput(out: string, isSelect: boolean): QueryResult {
+export function parseBatchOutput(out: string, isSelect: boolean): QueryResult {
   const trimmed = out.replace(/\r/g, "");
   if (!trimmed) return isSelect ? { rows: [] } : { affectedRows: 0, insertId: 0 };
 

@@ -190,9 +190,12 @@ function extractMessage(entry: RawErrorLine): string {
 function normalizeMessage(message: string): string {
   return message
     .replace(/\b[A-Z]+-\d+\b/g, "<TICKET>")
+    // URLs first: must run before PATH-stripping, otherwise the `//host/...`
+    // chunk of the URL gets eaten by the PATH regex and the URL regex has
+    // nothing left to match.
+    .replace(/https?:\/\/\S+/g, "<URL>")
     .replace(/\b\d{4,}\b/g, "<NUM>")
     .replace(/\/[\w./-]+/g, "<PATH>")
-    .replace(/https?:\/\/\S+/g, "<URL>")
     .replace(/0x[0-9a-fA-F]+/g, "<HEX>")
     .replace(/\b[0-9a-fA-F]{7,40}\b/g, "<HASH>")
     .replace(/\s+/g, " ")
