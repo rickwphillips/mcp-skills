@@ -42,7 +42,14 @@
       "password": "REPLACE_ME",
       "database": "rickwphi_app_commander",
       "env": "prod",
-      "description": "Production Commander Collector — requires CONFIRM on writes"
+      "description": "Production Commander Collector — requires CONFIRM on writes",
+      "ssh": {
+        "host": "REPLACE_ME.example.com",
+        "user": "REPLACE_ME",
+        "privateKey": "~/.ssh/id_rsa",
+        "remoteHost": "127.0.0.1",
+        "remotePort": 3306
+      }
     },
     "auth_prod": {
       "host": "127.0.0.1",
@@ -50,7 +57,14 @@
       "password": "REPLACE_ME",
       "database": "rickwphi_app_auth",
       "env": "prod",
-      "description": "Production auth DB"
+      "description": "Production auth DB",
+      "ssh": {
+        "host": "REPLACE_ME.example.com",
+        "user": "REPLACE_ME",
+        "privateKey": "~/.ssh/id_rsa",
+        "remoteHost": "127.0.0.1",
+        "remotePort": 3306
+      }
     },
     "portfolio_prod": {
       "host": "127.0.0.1",
@@ -58,7 +72,14 @@
       "password": "REPLACE_ME",
       "database": "rickwphi_app_portfolio",
       "env": "prod",
-      "description": "Production portfolio DB"
+      "description": "Production portfolio DB",
+      "ssh": {
+        "host": "REPLACE_ME.example.com",
+        "user": "REPLACE_ME",
+        "privateKey": "~/.ssh/id_rsa",
+        "remoteHost": "127.0.0.1",
+        "remotePort": 3306
+      }
     },
     "grandkid_prod": {
       "host": "127.0.0.1",
@@ -66,7 +87,14 @@
       "password": "REPLACE_ME",
       "database": "rickwphi_app_grandkid",
       "env": "prod",
-      "description": "Production grandkid arcade DB"
+      "description": "Production grandkid arcade DB",
+      "ssh": {
+        "host": "REPLACE_ME.example.com",
+        "user": "REPLACE_ME",
+        "privateKey": "~/.ssh/id_rsa",
+        "remoteHost": "127.0.0.1",
+        "remotePort": 3306
+      }
     }
   }
 }
