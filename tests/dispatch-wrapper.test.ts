@@ -1,5 +1,12 @@
-import { describe, it, expect } from "vitest";
-import { extractSwallowedError } from "../src/lib/dispatch-wrapper.js";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { extractSwallowedError, wrapRegisterTool } from "../src/lib/dispatch-wrapper.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+
+// Prevent real audit writes from contaminating the shared MCP_SKILLS_HOME temp dir
+// used by audit-patterns.test.ts running in a parallel fork.
+vi.mock("../src/lib/audit-patterns.js", () => ({
+  getSteeringForPattern: vi.fn().mockReturnValue(null),
+}));
 
 function envelope(body: object): unknown {
   return { content: [{ type: "text", text: JSON.stringify(body) }] };
@@ -100,5 +107,97 @@ describe("extractSwallowedError", () => {
         ],
       }),
     ).toBe("real one");
+  });
+
+  it("detects {error: {}} with no message/name — falls to safeStringify", () => {
+    const result = extractSwallowedError(envelope({ error: { code: 404 } }));
+    expect(result).toContain("404");
+  });
+
+  it("detects {errors: [{code}]} — object with no .message falls to safeStringify", () => {
+    const result = extractSwallowedError(envelope({ errors: [{ code: 500 }] }));
+    expect(result).toContain("500");
+  });
+
+  it("returns sentinel when status=error but no message field", () => {
+    expect(extractSwallowedError(envelope({ status: "error" }))).toBe(
+      "status=error with no message",
+    );
+  });
+
+  it("returns sentinel when ok=false and neither message nor reason present", () => {
+    expect(extractSwallowedError(envelope({ ok: false }))).toBe("ok=false with no message");
+  });
+});
+
+function makeMockServer() {
+  let capturedCb: ((...args: unknown[]) => unknown) | null = null;
+  const original = vi.fn((_name: string, _config: unknown, cb: (...args: unknown[]) => unknown) => {
+    capturedCb = cb;
+  });
+  const server = { registerTool: original } as unknown as McpServer;
+  return { server, getWrappedCb: () => capturedCb };
+}
+
+describe("wrapRegisterTool", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("replaces server.registerTool with a wrapped version", () => {
+    const { server } = makeMockServer();
+    const originalFn = server.registerTool;
+    wrapRegisterTool(server);
+    expect(server.registerTool).not.toBe(originalFn);
+  });
+
+  it("calls through to the original callback on success and returns the result", async () => {
+    const { server, getWrappedCb } = makeMockServer();
+    wrapRegisterTool(server);
+
+    const toolResult = { content: [{ type: "text", text: '{"status":"OK"}' }] };
+    const originalCb = vi.fn().mockResolvedValue(toolResult);
+    server.registerTool("my_tool", {} as never, originalCb as never);
+
+    const wrappedCb = getWrappedCb()!;
+    const result = await wrappedCb({}, {});
+    expect(result).toEqual(toolResult);
+    expect(originalCb).toHaveBeenCalledWith({}, {});
+  });
+
+  it("detects a swallowed error envelope and returns result unchanged (no steering in clean env)", async () => {
+    const { server, getWrappedCb } = makeMockServer();
+    wrapRegisterTool(server);
+
+    const errorResult = { content: [{ type: "text", text: '{"error":"oops"}' }] };
+    server.registerTool("my_tool", {} as never, vi.fn().mockResolvedValue(errorResult) as never);
+
+    const wrappedCb = getWrappedCb()!;
+    const result = await wrappedCb({}, {});
+    expect(result).toEqual(errorResult);
+  });
+
+  it("rethrows exceptions thrown by the original callback", async () => {
+    const { server, getWrappedCb } = makeMockServer();
+    wrapRegisterTool(server);
+
+    const boom = new Error("kaboom");
+    server.registerTool("my_tool", {} as never, vi.fn().mockRejectedValue(boom) as never);
+
+    const wrappedCb = getWrappedCb()!;
+    await expect(wrappedCb({}, {})).rejects.toThrow("kaboom");
+  });
+
+  it("passes isError:true result through without modification", async () => {
+    const { server, getWrappedCb } = makeMockServer();
+    wrapRegisterTool(server);
+
+    const isErrorResult = { isError: true, content: [{ type: "text", text: "plain error" }] };
+    server.registerTool("my_tool", {} as never, vi.fn().mockResolvedValue(isErrorResult) as never);
+
+    const wrappedCb = getWrappedCb()!;
+    const result = await wrappedCb({}, {});
+    // isError flag is detected as swallowed but no steering → result unchanged
+    expect(result).toEqual(isErrorResult);
   });
 });

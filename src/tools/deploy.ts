@@ -50,16 +50,6 @@ const isStaticOnly = (flags?: string): boolean => {
   return /(?:^|\s)(--static-only|-s)(?:\s|$)/.test(flags);
 };
 
-const checkGitClean = (cwd: string): { clean: boolean; output: string } => {
-  return new Promise<{ clean: boolean; output: string }>((resolve) => {
-    const child = spawn("git", ["status", "--porcelain"], { cwd });
-    let out = "";
-    child.stdout.on("data", (d) => (out += d.toString()));
-    child.stderr.on("data", (d) => (out += d.toString()));
-    child.on("close", () => resolve({ clean: out.trim().length === 0, output: out.trim() }));
-  }) as unknown as { clean: boolean; output: string };
-};
-
 const checkGitCleanAsync = async (cwd: string): Promise<{ clean: boolean; output: string }> => {
   return new Promise((resolve) => {
     const child = spawn("git", ["status", "--porcelain"], { cwd });
@@ -135,7 +125,8 @@ export const registerDeployTool = (server: McpServer) => {
       description:
         "Deploy one or all FreddyRhetorick projects (commander, portfolio, grandkid) to production. " +
         "Runs the project's deploy.sh; preflight-checks git tree clean and commander migration file location " +
-        "unless skip_preflight or --static-only.",
+        "unless skip_preflight or --static-only. " +
+        "**Before calling: surface the target and flags to the user and ask for confirmation. Never auto-fire a deploy.**",
       inputSchema,
     },
     async ({ target, flags, skip_preflight }) => {

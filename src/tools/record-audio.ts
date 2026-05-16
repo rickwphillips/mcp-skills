@@ -38,7 +38,8 @@ export const registerRecordAudioTool = (server: McpServer) => {
       title: "Record Audio (Mac, BlackHole)",
       description:
         "Start recording Mac system audio via BlackHole 2ch + ffmpeg. Saves to ~/Recordings/<prefix>_<timestamp>.m4a. " +
-        "Refuses if a recording is already in progress.",
+        "Refuses if a recording is already in progress. " +
+        "**Confirm with the user before starting a recording.**",
       inputSchema,
     },
     async ({ prefix }) => {

@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { join } from "node:path";
 import { z } from "zod";
+import { today } from "../lib/date-utils.js";
 
 const inputSchema = {
   project_path: z.string().describe("Filesystem path to the project root."),
@@ -87,12 +88,6 @@ const bumpSemver = (version: string, level: "patch" | "minor" | "major"): string
   return `${major}.${minor}.${patch + 1}`;
 };
 
-const today = (): string => {
-  const d = new Date();
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
-
 const updateChangelog = (root: string, newVersion: string, summary: string): string => {
   const path = join(root, "CHANGELOG.md");
   const entry = `## [${newVersion}] - ${today()}\n\n- ${summary}\n\n`;
@@ -119,7 +114,8 @@ export const registerBumpVersionTool = (server: McpServer) => {
       description:
         "Bump a project's semver version, write a CHANGELOG entry, and commit (no push). " +
         "Detects package.json / Cargo.toml / composer.json / pyproject.toml / VERSION. " +
-        "Date format is YYYY-MM-DD with no timestamp.",
+        "Date format is YYYY-MM-DD with no timestamp. " +
+        "**Before calling: confirm the version level and summary with the user — a commit is created by default.**",
       inputSchema,
     },
     async ({ project_path, level, summary, commit }) => {

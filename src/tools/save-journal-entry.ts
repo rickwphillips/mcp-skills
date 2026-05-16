@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
+import { today } from "../lib/date-utils.js";
 
 const inputSchema = {
   journal_dir: z
@@ -23,12 +24,6 @@ const inputSchema = {
     .describe(
       "If true and an entry for the date exists, append a new themed section. Default false: refuse if file exists.",
     ),
-};
-
-const today = (): string => {
-  const d = new Date();
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
 const longDate = (iso: string): string => {

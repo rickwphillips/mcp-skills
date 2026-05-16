@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { z } from "zod";
+import { today } from "../lib/date-utils.js";
 
 const inputSchema = {
   notes_dir: z
@@ -35,12 +36,6 @@ const inputSchema = {
     .string()
     .optional()
     .describe("Optional kebab-case slug. If omitted, derived from title."),
-};
-
-const today = (): string => {
-  const d = new Date();
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
 const slugify = (s: string): string =>

@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { redact } from "../src/lib/logger.js";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { redact, logger } from "../src/lib/logger.js";
 
 describe("redact: key-based masking", () => {
   it("masks keys named 'token'", () => {
@@ -81,5 +81,92 @@ describe("redact: edge cases", () => {
   it("does not mask key 'apricot' (false-positive guard for substring 'api')", () => {
     // The REDACT_KEY regex uses `api[_-]?key`, so 'apricot' shouldn't match.
     expect(redact({ apricot: "tasty" })).toEqual({ apricot: "tasty" });
+  });
+});
+
+function captureStderr(fn: () => void): Record<string, unknown>[] {
+  const lines: Record<string, unknown>[] = [];
+  const spy = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+    try {
+      lines.push(JSON.parse(chunk as string));
+    } catch {
+      // not JSON
+    }
+    return true;
+  });
+  fn();
+  spy.mockRestore();
+  return lines;
+}
+
+describe("logger methods: normalize + write", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("info writes a JSON line to stderr with level=info", () => {
+    const lines = captureStderr(() => logger.info({ tool: "my_tool", ok: true }));
+    expect(lines).toHaveLength(1);
+    expect(lines[0].level).toBe("info");
+    expect(lines[0].tool).toBe("my_tool");
+    expect(lines[0].ok).toBe(true);
+    expect(typeof lines[0].ts).toBe("string");
+  });
+
+  it("debug is suppressed at the default info level", () => {
+    const lines = captureStderr(() => logger.debug({ msg: "verbose" }));
+    expect(lines).toHaveLength(0);
+  });
+
+  it("warn writes to stderr and includes level=warn", () => {
+    const lines = captureStderr(() => logger.warn("something wrong"));
+    expect(lines[0].level).toBe("warn");
+    expect(lines[0].msg).toBe("something wrong");
+  });
+
+  it("error writes to stderr with level=error", () => {
+    const lines = captureStderr(() => logger.error("fatal"));
+    expect(lines[0].level).toBe("error");
+  });
+
+  it("string arg normalizes to {msg: string}", () => {
+    const lines = captureStderr(() => logger.info("hello world"));
+    expect(lines[0].msg).toBe("hello world");
+  });
+
+  it("null arg normalizes to empty payload (only ts/level/pid)", () => {
+    const lines = captureStderr(() => logger.info(null));
+    expect(lines[0].level).toBe("info");
+    expect(lines[0].msg).toBeUndefined();
+  });
+
+  it("number arg normalizes to {msg: string representation}", () => {
+    const lines = captureStderr(() => logger.info(42));
+    expect(lines[0].msg).toBe("42");
+  });
+
+  it("Error instance arg normalizes to {err: {name, message, stack}}", () => {
+    const lines = captureStderr(() => logger.error(new Error("raw error")));
+    expect(lines[0].err).toMatchObject({ name: "Error", message: "raw error" });
+  });
+
+  it("object with err:Error serializes the Error", () => {
+    const lines = captureStderr(() => logger.error({ tool: "t", err: new Error("disk full") }));
+    expect(lines[0].err).toMatchObject({ name: "Error", message: "disk full" });
+    expect((lines[0].err as Record<string, unknown>).stack).toBeDefined();
+  });
+
+  it("redacts sensitive keys in log payload", () => {
+    const lines = captureStderr(() => logger.info({ token: "secret123", id: 1 }));
+    expect(lines[0].token).toBe("[REDACTED]");
+    expect(lines[0].id).toBe(1);
+  });
+
+  it("exposes level, filePath, fileEnabled, auditEnabled, auditPath on logger", () => {
+    expect(logger.level).toBe("info");
+    expect(logger.fileEnabled).toBe(true);
+    expect(logger.auditEnabled).toBe(true);
+    expect(logger.auditPath).toContain("errors.jsonl");
+    expect(logger.filePath).toContain("server-");
   });
 });
