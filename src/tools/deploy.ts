@@ -22,7 +22,7 @@ const inputSchema = {
     .describe("Skip git-clean and commander-migration preflight checks. Default false."),
 };
 
-const REPO_ROOT = "/Users/rick/FreddyRhetorickProjects";
+const REPO_ROOT = "/Users/rickphillips/FreddyRhetorickContexts";
 const SCRIPTS = {
   commander: join(REPO_ROOT, "commander-collector/deploy.sh"),
   portfolio: join(REPO_ROOT, "website/rickwphillips.com/deploy-portfolio.sh"),
@@ -56,6 +56,9 @@ const checkGitCleanAsync = async (cwd: string): Promise<{ clean: boolean; output
     let out = "";
     child.stdout.on("data", (d) => (out += d.toString()));
     child.stderr.on("data", (d) => (out += d.toString()));
+    child.on("error", (err) =>
+      resolve({ clean: false, output: `Failed to run git in ${cwd}: ${err.message}` }),
+    );
     child.on("close", () => resolve({ clean: out.trim().length === 0, output: out.trim() }));
   });
 };
@@ -111,6 +114,9 @@ const runScript = async (
     let stderr = "";
     child.stdout.on("data", (d) => (stdout += d.toString()));
     child.stderr.on("data", (d) => (stderr += d.toString()));
+    child.on("error", (err) => {
+      resolve({ project, exit_code: null, signal: null, stdout, stderr: `${stderr}Failed to spawn ${scriptPath}: ${err.message}` });
+    });
     child.on("close", (code, signal) => {
       resolve({ project, exit_code: code, signal, stdout, stderr });
     });
