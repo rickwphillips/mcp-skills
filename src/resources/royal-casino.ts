@@ -7,7 +7,7 @@ const BODY = `# Royal Casino — Project Skill
 ## Project Locations
 - **Game project**: \`Casino-v0.0.1/\` (Unity)
 - **Tutorial/reference**: \`Conn-Casino/\` (Unity)
-- **Docs & planning**: \`royal-casino/\` (in FreddyRhetorickProjects)
+- **Docs & planning**: \`royal-casino/\` (in FreddyRhetorickContexts)
 
 ## Stack
 - **Engine**: Unity 2022+ LTS · **Language**: C# · **Architecture**: ScriptableObject-based rule configs
