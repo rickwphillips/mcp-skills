@@ -217,6 +217,23 @@ Config file is found in this order:
 | `MCP_SKILLS_AUDIT` | enabled | `off` disables the durable audit sink |
 | `MCP_SKILLS_AUDIT_RETAIN_RESOLVED_DAYS` | `7` | Resolved-pattern retention |
 | `MCP_SKILLS_AUDIT_RETAIN_OPEN_DAYS` | `30` | Open-pattern retention |
+| `MCP_SKILLS_SELECT` | unset (all tools) | Register only the named tool slice. See below. |
+
+### Tool slicing (`MCP_SKILLS_SELECT`)
+
+This is one server with many unrelated tool groups (db, pdf, audio, notes, release, health). In clients without ToolSearch deferral (Claude Desktop, Cursor) every tool schema loads into context eagerly. `MCP_SKILLS_SELECT` registers only the slice you want, so you can define several lightweight entries from the same binary.
+
+- Value is a comma- or whitespace-separated list of **group** names (`db`, `pdf`, `audio`, `notes`, `release`, `health`, `resources`) and/or exact **tool** names (`db_read`) for per-tool precision.
+- `get_version`, `check_for_updates`, and `list_tool_groups` are always registered, so any slice can still report itself.
+- Unset or empty => the full server (unchanged default).
+- Unrecognized tokens are ignored and logged. Call `list_tool_groups` for the live catalog and the names that actually registered.
+
+```jsonc
+"skills-db":  { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "db" } },
+"skills-pdf": { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "pdf" } }
+```
+
+In Claude Code, deferral already keeps unused schemas out of context, so the single full entry is fine there.
 
 ## Register with your agent
 
