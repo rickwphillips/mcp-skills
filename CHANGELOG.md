@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.0] - 2026-06-29
+
+- Opt-in tool slicing via MCP_SKILLS_SELECT. A single binary can register only a named subset of tools (group tokens db/pdf/audio/notes/release/health/resources or exact tool names), so clients without ToolSearch deferral (Claude Desktop, Cursor) can run several lightweight entries from one server instead of loading every schema. New tool-groups.ts manifest (single source of truth, coverage-tested), tool-select.ts selector parser + registerTool name filter applied after the telemetry wrap, and an always-on list_tool_groups introspection tool. Resources gate on the same selector. Unset selector means the full server, unchanged. Added unit tests for the parser/filter and an e2e stdio test asserting tools/list per slice, plus GitHub Actions CI (npm ci + build + test on Node 20/22).
+
 ## [1.0.1] - 2026-05-16
 
 - Audit: confirm directives on deploy/bump_version/record_audio, extract today() util, close coverage gaps (dispatch-wrapper 52→78%, logger 41→89%, pdf-pages/date-utils 0→100%)
