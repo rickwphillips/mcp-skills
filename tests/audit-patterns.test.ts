@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { AUDIT_DIR, AUDIT_ERRORS_PATH } from "../src/lib/logger.js";
 import {
@@ -231,5 +232,211 @@ describe("audit-patterns: getMcpHealth", () => {
     expect(health!.security_open).toBe(1);
     // security comes first even though bar has higher count
     expect(health!.top[0].tool).toBe("foo");
+  });
+});
+
+function appendLine(obj: Record<string, unknown>): void {
+  mkdirSync(AUDIT_DIR, { recursive: true });
+  const existing = existsSync(AUDIT_ERRORS_PATH) ? readFileSync(AUDIT_ERRORS_PATH, "utf8") : "";
+  writeFileSync(AUDIT_ERRORS_PATH, existing + JSON.stringify(obj) + "\n");
+}
+
+function daysAgo(n: number): string {
+  return new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function writePatternsFile(patterns: unknown[]): void {
+  mkdirSync(AUDIT_DIR, { recursive: true });
+  writeFileSync(PATTERNS_PATH, JSON.stringify({ version: 1, patterns }, null, 2));
+}
+
+describe("audit-patterns: message extraction + normalization", () => {
+  beforeEach(resetAudit);
+
+  it("extracts err.message from an object error", () => {
+    appendLine({ level: "error", tool: "t", err: { message: "kaboom" } });
+    expect(summarizeMcpErrors({ status: "open" }).patterns[0].normalized_message).toBe("kaboom");
+  });
+
+  it("falls back to err.name when message is absent", () => {
+    appendLine({ level: "error", tool: "t", err: { name: "TypeError" } });
+    expect(summarizeMcpErrors({ status: "open" }).patterns[0].normalized_message).toBe("TypeError");
+  });
+
+  it("falls back to msg when there is no err field", () => {
+    appendLine({ level: "error", tool: "t", msg: "just a message" });
+    expect(summarizeMcpErrors({ status: "open" }).patterns[0].normalized_message).toBe(
+      "just a message",
+    );
+  });
+
+  it("uses the (no message) sentinel when nothing usable is present", () => {
+    appendLine({ level: "error", tool: "t" });
+    expect(summarizeMcpErrors({ status: "open" }).patterns[0].normalized_message).toBe("(no message)");
+  });
+
+  it("defaults tool to (none) when the tool field is missing", () => {
+    appendLine({ level: "error", err: "boom" });
+    expect(summarizeMcpErrors({ status: "open" }).patterns[0].tool).toBe("(none)");
+  });
+
+  it("normalizes 0x hex literals to <HEX>", () => {
+    appendLine({ level: "error", tool: "t", err: "fault at 0xDEADBEEF now" });
+    expect(summarizeMcpErrors({ status: "open" }).patterns[0].normalized_message).toContain("<HEX>");
+  });
+
+  it("ignores raw lines whose level is not warn/error", () => {
+    appendLine({ level: "info", tool: "t", msg: "noise" });
+    appendLine({ level: "error", tool: "t", err: "real" });
+    const r = summarizeMcpErrors({ status: "open" });
+    expect(r.patterns).toHaveLength(1);
+    expect(r.scanned_raw_lines).toBe(2);
+  });
+});
+
+describe("audit-patterns: legacy notes migration", () => {
+  beforeEach(resetAudit);
+
+  function basePattern(extra: Record<string, unknown>): Record<string, unknown> {
+    return {
+      id: "legacy1",
+      tool: "t",
+      level: "error",
+      severity: "normal",
+      normalized_message: "m",
+      count: 2,
+      first_seen: daysAgo(1),
+      last_seen: daysAgo(1),
+      samples: [],
+      status: "open",
+      ...extra,
+    };
+  }
+
+  it("migrates a string note into a single note object", () => {
+    writePatternsFile([basePattern({ notes: "old inline note" })]);
+    const notes = summarizeMcpErrors({ status: "all" }).patterns[0].notes;
+    expect(notes).toHaveLength(1);
+    expect(notes![0].body).toBe("old inline note");
+    expect(notes![0].status).toBe("active");
+  });
+
+  it("migrates an array of mixed note entries, dropping invalid ones", () => {
+    writePatternsFile([
+      basePattern({
+        notes: [
+          { id: "a", ts: daysAgo(1), body: "valid", status: "active", count_at_creation: 1 },
+          { body: "minimal" },
+          "string note",
+          { nope: true },
+          42,
+        ],
+      }),
+    ]);
+    const bodies = summarizeMcpErrors({ status: "all" }).patterns[0].notes!.map((n) => n.body);
+    expect(bodies).toEqual(["valid", "minimal", "string note"]);
+  });
+
+  it("drops a notes field that is neither string nor array", () => {
+    writePatternsFile([basePattern({ notes: 42 })]);
+    expect(summarizeMcpErrors({ status: "all" }).patterns[0].notes).toBeUndefined();
+  });
+});
+
+describe("audit-patterns: purge retention", () => {
+  beforeEach(resetAudit);
+
+  function base(extra: Record<string, unknown>): Record<string, unknown> {
+    return {
+      id: "p",
+      tool: "t",
+      level: "error",
+      severity: "normal",
+      normalized_message: "m",
+      count: 1,
+      first_seen: daysAgo(200),
+      last_seen: daysAgo(200),
+      samples: [],
+      status: "open",
+      ...extra,
+    };
+  }
+
+  it("purges resolved patterns past the resolved retention window", () => {
+    writePatternsFile([base({ status: "resolved", resolved_at: daysAgo(100), last_seen: daysAgo(100) })]);
+    const r = summarizeMcpErrors({ status: "all" });
+    expect(r.purged).toBe(1);
+    expect(r.total_patterns).toBe(0);
+  });
+
+  it("purges resolved patterns using last_seen when resolved_at is absent", () => {
+    writePatternsFile([base({ status: "resolved", last_seen: daysAgo(100) })]);
+    expect(summarizeMcpErrors({ status: "all" }).purged).toBe(1);
+  });
+
+  it("purges open patterns past the open retention window", () => {
+    writePatternsFile([base({ status: "open", last_seen: daysAgo(100) })]);
+    expect(summarizeMcpErrors({ status: "all" }).purged).toBe(1);
+  });
+
+  it("keeps patterns with an unparseable last_seen date", () => {
+    writePatternsFile([base({ status: "open", last_seen: "not-a-date" })]);
+    const r = summarizeMcpErrors({ status: "all" });
+    expect(r.purged).toBe(0);
+    expect(r.total_patterns).toBe(1);
+  });
+});
+
+describe("audit-patterns: auto-rollup + health ordering", () => {
+  beforeEach(resetAudit);
+
+  it("rolls up and clears the raw sink when it exceeds the line threshold", () => {
+    mkdirSync(AUDIT_DIR, { recursive: true });
+    const line = JSON.stringify({ ts: new Date().toISOString(), level: "error", tool: "t", err: "flood" });
+    writeFileSync(AUDIT_ERRORS_PATH, (line + "\n").repeat(5001));
+    expect(getMcpHealth()).not.toBeNull();
+    expect(readFileSync(AUDIT_ERRORS_PATH, "utf8")).toBe("");
+  });
+
+  it("detects rollup need by file size for a single oversized line", () => {
+    mkdirSync(AUDIT_DIR, { recursive: true });
+    const big = "x".repeat(1_100_000);
+    const line = JSON.stringify({ ts: new Date().toISOString(), level: "error", tool: "t", err: big });
+    writeFileSync(AUDIT_ERRORS_PATH, line + "\n");
+    expect(getMcpHealth()).not.toBeNull();
+    expect(readFileSync(AUDIT_ERRORS_PATH, "utf8")).toBe("");
+  });
+
+  it("orders equal-severity patterns by reopen_count then count", () => {
+    writePatternsFile([
+      { id: "B", tool: "b", level: "error", severity: "normal", normalized_message: "b", count: 5, first_seen: daysAgo(1), last_seen: daysAgo(1), samples: [], status: "open", reopen_count: 0 },
+      { id: "A", tool: "a", level: "error", severity: "normal", normalized_message: "a", count: 2, first_seen: daysAgo(1), last_seen: daysAgo(1), samples: [], status: "open", reopen_count: 1 },
+      { id: "C", tool: "c", level: "error", severity: "normal", normalized_message: "c", count: 3, first_seen: daysAgo(1), last_seen: daysAgo(1), samples: [], status: "open", reopen_count: 0 },
+    ]);
+    expect(getMcpHealth()!.top.map((t) => t.id)).toEqual(["A", "B", "C"]);
+  });
+});
+
+describe("audit-patterns: severity backfill + reopen via rollup", () => {
+  beforeEach(resetAudit);
+
+  it("backfills severity on an existing pattern that lacks it", () => {
+    const normalized = "sev msg";
+    const id = createHash("sha1").update(`sev_t|error|${normalized}`).digest("hex").slice(0, 12);
+    writePatternsFile([
+      { id, tool: "sev_t", level: "error", normalized_message: normalized, count: 1, first_seen: daysAgo(1), last_seen: daysAgo(1), samples: [], status: "open" },
+    ]);
+    appendLine({ level: "error", tool: "sev_t", err: normalized });
+    const p = summarizeMcpErrors({ status: "open" }).patterns.find((x) => x.id === id)!;
+    expect(p.severity).toBe("normal");
+  });
+
+  it("reopens a resolved pattern when a matching raw error rolls up again", () => {
+    writeRawError("reopen_t", "reopen msg");
+    const id = summarizeMcpErrors({ status: "open" }).patterns[0].id;
+    markMcpPatternResolved({ pattern_id: id });
+    const p = summarizeMcpErrors({ status: "all" }).patterns.find((x) => x.id === id)!;
+    expect(p.status).toBe("open");
+    expect(p.reopen_count).toBe(1);
   });
 });

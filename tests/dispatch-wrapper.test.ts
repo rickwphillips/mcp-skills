@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { extractSwallowedError, wrapRegisterTool } from "../src/lib/dispatch-wrapper.js";
+import { getSteeringForPattern } from "../src/lib/audit-patterns.js";
+import type { SteeringPayload } from "../src/lib/audit-patterns.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 // Prevent real audit writes from contaminating the shared MCP_SKILLS_HOME temp dir
@@ -199,5 +201,85 @@ describe("wrapRegisterTool", () => {
     const result = await wrappedCb({}, {});
     // isError flag is detected as swallowed but no steering → result unchanged
     expect(result).toEqual(isErrorResult);
+  });
+});
+
+describe("wrapRegisterTool: steering injection on recurrence", () => {
+  const steering: SteeringPayload = {
+    pattern_id: "p123",
+    count: 3,
+    reopen_count: 0,
+    severity: "normal",
+    active_notes: [{ id: "n1", ts: "2026-01-01T00:00:00.000Z", body: "restart mysql" }],
+    superseded_count: 0,
+    recommendation: "apply_active_notes",
+  };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.mocked(getSteeringForPattern).mockReturnValue(null);
+  });
+
+  it("injects _steering into the JSON block when a swallowed error recurs", async () => {
+    const { server, getWrappedCb } = makeMockServer();
+    wrapRegisterTool(server);
+    vi.mocked(getSteeringForPattern).mockReturnValueOnce(steering);
+
+    const errorResult = { content: [{ type: "text", text: JSON.stringify({ error: "db down" }) }] };
+    server.registerTool("db_read", {} as never, vi.fn().mockResolvedValue(errorResult) as never);
+
+    const result = (await getWrappedCb()!({}, {})) as { content: Array<{ text: string }> };
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed._steering).toMatchObject({
+      pattern_id: "p123",
+      recommendation: "apply_active_notes",
+    });
+  });
+
+  it("returns result unchanged when steering present but content is not an array", async () => {
+    const { server, getWrappedCb } = makeMockServer();
+    wrapRegisterTool(server);
+    vi.mocked(getSteeringForPattern).mockReturnValueOnce(steering);
+
+    const r = { isError: true };
+    server.registerTool("db_read", {} as never, vi.fn().mockResolvedValue(r) as never);
+
+    expect(await getWrappedCb()!({}, {})).toEqual(r);
+  });
+
+  it("skips non-text blocks when injecting steering", async () => {
+    const { server, getWrappedCb } = makeMockServer();
+    wrapRegisterTool(server);
+    vi.mocked(getSteeringForPattern).mockReturnValueOnce(steering);
+
+    const r = { isError: true, content: [{ type: "image" }] };
+    server.registerTool("db_read", {} as never, vi.fn().mockResolvedValue(r) as never);
+
+    expect(await getWrappedCb()!({}, {})).toEqual(r);
+  });
+
+  it("leaves non-JSON text blocks untouched when injecting steering", async () => {
+    const { server, getWrappedCb } = makeMockServer();
+    wrapRegisterTool(server);
+    vi.mocked(getSteeringForPattern).mockReturnValueOnce(steering);
+
+    const r = { isError: true, content: [{ type: "text", text: "not json at all" }] };
+    server.registerTool("db_read", {} as never, vi.fn().mockResolvedValue(r) as never);
+
+    expect(await getWrappedCb()!({}, {})).toEqual(r);
+  });
+
+  it("logs steering but still rethrows when the callback throws and the pattern recurs", async () => {
+    const { server, getWrappedCb } = makeMockServer();
+    wrapRegisterTool(server);
+    vi.mocked(getSteeringForPattern).mockReturnValueOnce(steering);
+
+    server.registerTool(
+      "db_read",
+      {} as never,
+      vi.fn().mockRejectedValue(new Error("kaboom")) as never,
+    );
+
+    await expect(getWrappedCb()!({}, {})).rejects.toThrow("kaboom");
   });
 });
