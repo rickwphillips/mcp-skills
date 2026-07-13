@@ -33,6 +33,8 @@ export const TOOL_GROUPS: Readonly<Record<string, string>> = {
   // audio capture
   record_audio: "audio",
   stop_recording: "audio",
+  // desktop / display control
+  sidecar: "desktop",
   // durable notes / journal
   save_journal_entry: "notes",
   save_session_note: "notes",
@@ -61,6 +63,7 @@ export const GROUPS: readonly string[] = [
   "db",
   "pdf",
   "audio",
+  "desktop",
   "notes",
   "release",
   "health",

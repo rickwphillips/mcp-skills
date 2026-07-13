@@ -22,6 +22,7 @@ import { registerAuditTools } from "./audit.js";
 import { registerHealthAgentSkillTool } from "./health.js";
 import { registerGetBootTool } from "./boot.js";
 import { registerWorktreeSkillTool } from "./worktree.js";
+import { registerSidecarTool } from "./sidecar.js";
 
 export const registerTools = (server: McpServer) => {
   registerGetVersionTool(server);
@@ -47,4 +48,5 @@ export const registerTools = (server: McpServer) => {
   registerHealthAgentSkillTool(server);
   registerGetBootTool(server);
   registerWorktreeSkillTool(server);
+  registerSidecarTool(server);
 };

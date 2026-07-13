@@ -1,0 +1,109 @@
+#!/bin/bash
+# sidecar — connect / reconnect / toggle an Apple Sidecar display from the CLI,
+# without shoving the cursor to the screen edge. Self-contained: the Objective-C
+# below is compiled on first run (and whenever this script changes) into a cached
+# binary, because the connect logic lives in the private SidecarCore framework.
+#
+#   sidecar list                 what is offering a display right now
+#   sidecar connect   [name]     connect to first match (partial name ok)
+#   sidecar disconnect [name]    drop the connection
+#   sidecar reconnect [name]     poll up to 90s, connect the instant it reappears
+#   sidecar toggle    [name]     disconnect if connected, else reconnect  (hotkey)
+#
+set -euo pipefail
+
+CACHE="${HOME}/.cache/sidecar"
+BIN="${CACHE}/sidecar-bin"
+SRC="${CACHE}/sidecar.m"
+mkdir -p "${CACHE}"
+
+# --- embedded Objective-C source (delimiter OBJC_EOF; single-quoted = no expansion)
+cat > "${SRC}.tmp" <<'OBJC_EOF'
+#import <Foundation/Foundation.h>
+#import <dlfcn.h>
+#import <objc/runtime.h>
+
+@interface SidecarDevice : NSObject
+- (NSString *)name; - (NSString *)identifier; - (long long)status; @end
+@interface SidecarDisplayManager : NSObject
++ (instancetype)sharedManager;
+- (NSArray *)devices; - (NSArray *)recentDevices; - (NSArray *)connectedDevices;
+- (void)connectToDevice:(id)d completion:(void(^)(NSError *))c;
+- (void)disconnectFromDevice:(id)d completion:(void(^)(NSError *))c; @end
+
+static SidecarDevice *match(NSArray *devs, NSString *want){
+  for (SidecarDevice *d in devs)
+    if (!want || [d.name.lowercaseString containsString:want.lowercaseString]) return d;
+  return nil;
+}
+
+int main(int argc, char **argv){ @autoreleasepool {
+  dlopen("/System/Library/PrivateFrameworks/SidecarCore.framework/SidecarCore", RTLD_NOW);
+  SidecarDisplayManager *mgr = [objc_getClass("SidecarDisplayManager") sharedManager];
+  NSString *cmd  = argc>1 ? @(argv[1]) : @"list";
+  NSString *want = argc>2 ? @(argv[2]) : nil;
+
+  if ([cmd isEqualToString:@"list"]) {
+    NSArray *d = mgr.devices;
+    printf("Sidecar devices offering a display right now (%lu):\n", (unsigned long)d.count);
+    for (SidecarDevice *x in d) printf("  %-28s status=%lld id=%s\n", x.name.UTF8String, x.status, x.identifier.UTF8String);
+    if (d.count==0) printf("  (none advertising - device is asleep, on a different network, or not offering itself)\n");
+    return 0;
+  }
+
+  void(^run)(BOOL,SidecarDevice*) = ^(BOOL connect, SidecarDevice *t){
+    dispatch_semaphore_t s = dispatch_semaphore_create(0); __block int rc=0;
+    void(^done)(NSError*) = ^(NSError *e){
+      if (e){ fprintf(stderr,"FAILED: %s\n", e.localizedDescription.UTF8String); rc=1; }
+      else printf("OK: %s %s\n", cmd.UTF8String, t.name.UTF8String);
+      dispatch_semaphore_signal(s);
+    };
+    if (connect) [mgr connectToDevice:t completion:done];
+    else         [mgr disconnectFromDevice:t completion:done];
+    dispatch_semaphore_wait(s, dispatch_time(DISPATCH_TIME_NOW, 20*NSEC_PER_SEC));
+    exit(rc);
+  };
+
+  if ([cmd isEqualToString:@"connect"]) {
+    SidecarDevice *t = match(mgr.devices, want);
+    if (!t){ fprintf(stderr,"No device matching '%s' is advertising. Try 'sidecar reconnect %s'.\n", want?want.UTF8String:"(any)", want?want.UTF8String:""); return 1; }
+    run(YES, t);
+  }
+  if ([cmd isEqualToString:@"disconnect"]) {
+    SidecarDevice *t = match(mgr.connectedDevices.count?mgr.connectedDevices:mgr.devices, want);
+    if (!t){ fprintf(stderr,"No matching connected device.\n"); return 1; }
+    run(NO, t);
+  }
+  if ([cmd isEqualToString:@"toggle"]) {
+    SidecarDevice *on = match(mgr.connectedDevices, want);
+    if (on){ printf("Connected - disconnecting %s.\n", on.name.UTF8String); run(NO, on); }
+    printf("Not connected - reconnecting '%s'.\n", want?want.UTF8String:"(any device)");
+    cmd = @"reconnect";
+  }
+  if ([cmd isEqualToString:@"reconnect"]) {
+    int waited=0, maxWait = 90;
+    printf("Waiting for '%s' to re-advertise (up to %ds)...\n", want?want.UTF8String:"(any device)", maxWait);
+    while (waited < maxWait) {
+      SidecarDevice *t = match(mgr.devices, want);
+      if (t){ printf("Found %s - connecting.\n", t.name.UTF8String); run(YES, t); }
+      [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.5]];
+      waited += 2;
+    }
+    fprintf(stderr,"Timed out; device never re-advertised. It's likely asleep or off-network.\n");
+    return 1;
+  }
+  fprintf(stderr,"usage: sidecar [list | connect | disconnect | reconnect | toggle <name>]\n");
+  return 2;
+}}
+OBJC_EOF
+
+# --- rebuild only when the embedded source changed (or the binary is missing)
+if [ ! -x "${BIN}" ] || ! cmp -s "${SRC}.tmp" "${SRC}"; then
+  mv "${SRC}.tmp" "${SRC}"
+  clang -fobjc-arc -framework Foundation "${SRC}" -o "${BIN}" \
+    || { echo "sidecar: compile failed (need Xcode command line tools?)" >&2; exit 1; }
+else
+  rm -f "${SRC}.tmp"
+fi
+
+exec "${BIN}" "$@"
