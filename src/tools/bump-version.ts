@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { z } from "zod";
 import { today } from "../lib/date-utils.js";
@@ -148,10 +148,13 @@ export const registerBumpVersionTool = (server: McpServer) => {
 
         let commitSha: string | null = null;
         if (shouldCommit) {
+          // execFileSync with an args array — never a shell string — so a
+          // project_path (or any input) containing $(...)/backticks is passed
+          // as a literal git argument instead of being evaluated by the shell.
           const opts = { cwd: project_path };
-          execSync(`git add ${JSON.stringify(manifest.path)} ${JSON.stringify(changelogPath)}`, opts);
-          execSync(`git commit -m ${JSON.stringify(`chore: bump to v${newVersion}`)}`, opts);
-          commitSha = execSync(`git rev-parse HEAD`, opts).toString().trim();
+          execFileSync("git", ["add", manifest.path, changelogPath], opts);
+          execFileSync("git", ["commit", "-m", `chore: bump to v${newVersion}`], opts);
+          commitSha = execFileSync("git", ["rev-parse", "HEAD"], opts).toString().trim();
         }
 
         return {

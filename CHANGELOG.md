@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.0] - 2026-07-14
+
+- Harden db_read (reject non-read-only and stacked statements) and db_write (enforce two-step CONFIRM, fix audit-order duplicate-write hazard); use execFileSync in bump_version to prevent shell injection.
+
 ## [1.1.1] - 2026-07-09
 
 - Test coverage: audit-patterns message extraction/normalization + legacy notes migration, and dispatch-wrapper steering-injection-on-recurrence edge cases. No source or API changes; 156 tests passing.

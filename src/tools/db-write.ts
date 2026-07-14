@@ -1,10 +1,31 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
+import { createHash } from "node:crypto";
 import type mysql from "mysql2/promise";
 import { z } from "zod";
 import { getConnection, loadConfig } from "../config/connections.js";
 import { getPool } from "../lib/db-pool.js";
+
+// Prod writes awaiting CONFIRM, keyed by a hash of the exact (connection, query,
+// params) surfaced on the first call. A confirm only executes a write that was
+// actually reviewed first: a lone confirm: "CONFIRM" on the first call, or a
+// confirm whose SQL differs from what was surfaced, matches nothing and is
+// rejected. In-memory + short TTL, so it fails closed across a server restart.
+const pendingConfirms = new Map<string, number>();
+const CONFIRM_TTL_MS = 5 * 60 * 1000;
+
+function confirmKey(connection: string, query: string, params: unknown[]): string {
+  return createHash("sha256")
+    .update(JSON.stringify([connection, query, params]))
+    .digest("hex");
+}
+
+function prunePendingConfirms(now: number): void {
+  for (const [k, ts] of pendingConfirms) {
+    if (now - ts > CONFIRM_TTL_MS) pendingConfirms.delete(k);
+  }
+}
 
 const inputSchema = {
   connection: z.string().describe("Connection name as defined in the server's connections config."),
@@ -75,28 +96,65 @@ export const registerDbWriteTool = (server: McpServer) => {
       const conn = getConnection(connection);
       const env = conn.env ?? "dev";
 
-      if (env === "prod" && confirm !== "CONFIRM") {
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  env,
-                  connection,
-                  database: conn.database,
-                  executed_sql: query,
-                  params: params ?? [],
-                  status: "REQUIRES_CONFIRMATION",
-                  message:
-                    "PRODUCTION write blocked. Re-call db_write with confirm: \"CONFIRM\" after surfacing the read-before state and the SQL to the user. Include rollback_sql.",
-                },
-                null,
-                2,
-              ),
-            },
-          ],
-        };
+      if (env === "prod") {
+        const now = Date.now();
+        prunePendingConfirms(now);
+        const key = confirmKey(connection, query, params ?? []);
+
+        if (confirm !== "CONFIRM") {
+          // First step: register this exact write as pending and ask for
+          // confirmation. Nothing executes yet.
+          pendingConfirms.set(key, now);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    env,
+                    connection,
+                    database: conn.database,
+                    executed_sql: query,
+                    params: params ?? [],
+                    status: "REQUIRES_CONFIRMATION",
+                    message:
+                      "PRODUCTION write blocked. Re-call db_write with confirm: \"CONFIRM\" and the identical SQL/params after surfacing the read-before state to the user. Include rollback_sql.",
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        }
+
+        // Second step: only proceed if this exact SQL was surfaced first.
+        const pendingTs = pendingConfirms.get(key);
+        if (pendingTs === undefined) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    env,
+                    connection,
+                    database: conn.database,
+                    executed_sql: query,
+                    params: params ?? [],
+                    status: "CONFIRMATION_NOT_FOUND",
+                    message:
+                      "No pending write matches this exact connection/SQL/params (or it expired). Call db_write WITHOUT confirm first to surface the read-before state, then re-call with confirm: \"CONFIRM\" and the identical SQL.",
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        }
+        // Consume the token — one confirm per surfaced write.
+        pendingConfirms.delete(key);
       }
 
       const pool = await getPool(connection);
@@ -115,11 +173,29 @@ export const registerDbWriteTool = (server: McpServer) => {
           read_before_state: read_before_state ?? null,
           rollback_sql: rollback_sql ?? null,
         };
-        appendAudit(audit);
-        pruneAudit();
+        // The write has already committed. If auditing fails, do NOT fall into
+        // the catch below and report ERROR — that would prompt a retry and
+        // duplicate the row. Surface the audit failure as a warning on an OK
+        // result instead.
+        let auditWarning: string | null = null;
+        try {
+          appendAudit(audit);
+          pruneAudit();
+        } catch (auditErr) {
+          auditWarning = auditErr instanceof Error ? auditErr.message : String(auditErr);
+        }
         return {
           content: [
-            { type: "text", text: JSON.stringify({ ...audit, status: "OK" }, null, 2) },
+            {
+              type: "text",
+              text: JSON.stringify(
+                auditWarning
+                  ? { ...audit, status: "OK", audit_warning: auditWarning }
+                  : { ...audit, status: "OK" },
+                null,
+                2,
+              ),
+            },
           ],
         };
       } catch (err) {
