@@ -11,10 +11,60 @@ function shellSingleQuote(s: string): string {
   return `'${s.replace(/'/g, `'\\''`)}'`;
 }
 
-function isReadOnlyStatement(sql: string): boolean {
-  const head = sql.trim().toUpperCase();
+export function isSingleStatement(sql: string): boolean {
+  // True if `sql` is a single statement (an optional trailing ';' is allowed).
+  // Strips string literals and comments first so a ';' inside 'a;b' or a comment
+  // is not mistaken for a statement separator. Used to reject stacked statements
+  // (e.g. "SELECT 1; UPDATE t SET ...") on the db_read path, where the SSH
+  // shell-out would otherwise execute every ';'-separated statement.
+  let stripped = "";
+  let i = 0;
+  const n = sql.length;
+  while (i < n) {
+    const ch = sql[i];
+    if (ch === "'" || ch === '"' || ch === "`") {
+      const quote = ch;
+      i++;
+      while (i < n) {
+        if (sql[i] === "\\") { i += 2; continue; }
+        if (sql[i] === quote) {
+          if (sql[i + 1] === quote) { i += 2; continue; } // doubled-quote escape
+          i++;
+          break;
+        }
+        i++;
+      }
+      continue;
+    }
+    if (ch === "-" && sql[i + 1] === "-") {
+      while (i < n && sql[i] !== "\n") i++;
+      continue;
+    }
+    if (ch === "/" && sql[i + 1] === "*") {
+      i += 2;
+      while (i < n && !(sql[i] === "*" && sql[i + 1] === "/")) i++;
+      i += 2;
+      continue;
+    }
+    stripped += ch;
+    i++;
+  }
+  return !stripped.replace(/;\s*$/, "").includes(";");
+}
+
+export function isReadOnlyStatement(sql: string): boolean {
+  // Strip leading line (-- ...) and block (/* ... */) comments plus whitespace
+  // so a comment prefix can't hide the real leading keyword.
+  let head = sql;
+  let prev;
+  do {
+    prev = head;
+    head = head.replace(/^\s+/, "").replace(/^--[^\n]*\n?/, "").replace(/^\/\*[\s\S]*?\*\//, "");
+  } while (head !== prev);
+  head = head.toUpperCase();
   return (
     head.startsWith("SELECT") ||
+    head.startsWith("WITH") ||
     head.startsWith("SHOW") ||
     head.startsWith("DESCRIBE") ||
     head.startsWith("DESC ") ||
