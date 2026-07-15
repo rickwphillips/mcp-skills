@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { z } from "zod";
+import { summarizeDeployRuns } from "../lib/deploy-run.js";
 
 const inputSchema = {
   target: z
@@ -203,26 +204,35 @@ export const registerDeployTool = (server: McpServer) => {
           ? await Promise.all(projects.map((p) => runScript(p, flags)))
           : [await runScript(projects[0], flags)];
 
-      const allOk = runs.every((r) => r.exit_code === 0);
+      const { status, outcomes, isError } = summarizeDeployRuns(runs);
+      const runsWithOutcomes = runs.map((run, index) => ({
+        ...run,
+        outcome: outcomes[index],
+      }));
+
       return {
         content: [
           {
             type: "text",
             text: JSON.stringify(
               {
-                status: allOk ? "OK" : "PARTIAL_FAILURE",
+                status,
                 target,
                 projects,
                 flags: flags ?? null,
                 preflight,
-                runs,
+                runs: runsWithOutcomes,
+                message:
+                  status === "DEPLOY_OK_E2E_FAILED"
+                    ? "Deploy completed and is live; post-deploy Playwright smoke tests reported failures. Verify prod manually or re-run e2e after cache warmup."
+                    : undefined,
               },
               null,
               2,
             ),
           },
         ],
-        isError: !allOk,
+        isError,
       };
     },
   );

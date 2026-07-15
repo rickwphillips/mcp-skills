@@ -1,6 +1,6 @@
 {
   "name": "mcp-skills",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Agent-agnostic MCP server exposing reusable database, PDF, and workflow skills as Tools and Resources.",
   "license": "MIT",
   "author": "Rick Phillips",

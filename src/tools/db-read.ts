@@ -12,7 +12,9 @@ const inputSchema = {
     .string()
     .describe(
       "Raw SQL to execute. The server uses a native MySQL driver — do NOT shell-escape. " +
-        "Use SQL's own escaping (e.g. '' for a literal apostrophe).",
+        "Use SQL's own escaping (e.g. '' for a literal apostrophe). " +
+        "Before ad-hoc SELECTs on an unfamiliar schema, run `SHOW TABLES` and `DESCRIBE table_name` " +
+        "as separate single-statement calls on the same connection — do not guess table or column names.",
     ),
   params: z
     .array(z.union([z.string(), z.number(), z.boolean(), z.null()]))
@@ -32,7 +34,10 @@ export const registerDbReadTool = (server: McpServer) => {
         "Run a read-only SQL query against a configured MySQL connection. Returns rows as JSON. " +
         "The server uses a native MySQL driver — pass raw SQL exactly as MySQL expects it; do NOT shell-escape. " +
         "Use SQL's own escaping (e.g. '' for a literal apostrophe) or pass the optional `params` array to bind values safely. " +
-        "The response includes `executed_sql` so you can verify exactly what reached the database.",
+        "The response includes `executed_sql` so you can verify exactly what reached the database. " +
+        "**Schema discovery:** before querying unfamiliar tables, call `list_db_connections` if needed, then run " +
+        "`SHOW TABLES` and `DESCRIBE table_name` on the target connection (one statement per call). " +
+        "Do not invent table or column names — wrong guesses are a common source of audit noise.",
       inputSchema,
     },
     async ({ connection, query, params }) => {

@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.1] - 2026-07-15
+
+- Reduce MCP health audit noise: commander deploy e2e-only failures return `DEPLOY_OK_E2E_FAILED` without `isError`; steering injection logs at `info` instead of polluting the warn audit sink; `db_read` tool description adds `SHOW TABLES` / `DESCRIBE` schema-discovery guidance. Adds `deploy-run` classifier, steering log test, and logger env-config coverage.
+
 ## [1.2.0] - 2026-07-14
 
 - Harden db_read (reject non-read-only and stacked statements) and db_write (enforce two-step CONFIRM, fix audit-order duplicate-write hazard); use execFileSync in bump_version to prevent shell injection.

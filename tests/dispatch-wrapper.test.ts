@@ -3,6 +3,7 @@ import { extractSwallowedError, wrapRegisterTool } from "../src/lib/dispatch-wra
 import { getSteeringForPattern } from "../src/lib/audit-patterns.js";
 import type { SteeringPayload } from "../src/lib/audit-patterns.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { logger } from "../src/lib/logger.js";
 
 // Prevent real audit writes from contaminating the shared MCP_SKILLS_HOME temp dir
 // used by audit-patterns.test.ts running in a parallel fork.
@@ -234,6 +235,28 @@ describe("wrapRegisterTool: steering injection on recurrence", () => {
       pattern_id: "p123",
       recommendation: "apply_active_notes",
     });
+  });
+
+  it("logs steering injection at info level (not warn) so audit health stays clean", async () => {
+    const infoSpy = vi.spyOn(logger, "info");
+    const warnSpy = vi.spyOn(logger, "warn");
+    const { server, getWrappedCb } = makeMockServer();
+    wrapRegisterTool(server);
+    vi.mocked(getSteeringForPattern).mockReturnValueOnce(steering);
+
+    const errorResult = { content: [{ type: "text", text: JSON.stringify({ error: "db down" }) }] };
+    server.registerTool("db_read", {} as never, vi.fn().mockResolvedValue(errorResult) as never);
+
+    await getWrappedCb()!({}, {});
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "steering injected for recurring tool error",
+        tool: "db_read",
+        steering: expect.objectContaining({ pattern_id: "p123" }),
+      }),
+    );
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it("returns result unchanged when steering present but content is not an array", async () => {

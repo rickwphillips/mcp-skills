@@ -170,3 +170,45 @@ describe("logger methods: normalize + write", () => {
     expect(logger.filePath).toContain("server-");
   });
 });
+
+describe("logger: readOptions env configuration", () => {
+  const saved = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...saved };
+    vi.resetModules();
+  });
+
+  async function freshLogger(env: Record<string, string | undefined>) {
+    vi.resetModules();
+    for (const [k, v] of Object.entries(env)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+    return (await import("../src/lib/logger.js")).logger;
+  }
+
+  it("honors MCP_SKILLS_LOG_LEVEL=debug", async () => {
+    expect((await freshLogger({ MCP_SKILLS_LOG_LEVEL: "debug" })).level).toBe("debug");
+  });
+
+  it("falls back to info for an unrecognized level", async () => {
+    expect((await freshLogger({ MCP_SKILLS_LOG_LEVEL: "bogus" })).level).toBe("info");
+  });
+
+  it("disables file logging when MCP_SKILLS_LOG_FILE=off", async () => {
+    const l = await freshLogger({ MCP_SKILLS_LOG_FILE: "off" });
+    expect(l.fileEnabled).toBe(false);
+    expect(l.filePath).toBeNull();
+  });
+
+  it("uses a custom file path when MCP_SKILLS_LOG_FILE is a path", async () => {
+    expect((await freshLogger({ MCP_SKILLS_LOG_FILE: "/tmp/custom-mcp.log" })).filePath).toBe(
+      "/tmp/custom-mcp.log",
+    );
+  });
+
+  it("disables audit when MCP_SKILLS_AUDIT=off", async () => {
+    expect((await freshLogger({ MCP_SKILLS_AUDIT: "off" })).auditEnabled).toBe(false);
+  });
+});

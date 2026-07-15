@@ -11,6 +11,12 @@ export default defineConfig({
       include: ["src/lib/**/*.ts"],
       exclude: ["src/lib/db-pool.ts", "src/lib/ssh-mysql.ts"],
       reporter: ["text", "json", "html"],
+      thresholds: {
+        lines: 90,
+        functions: 90,
+        branches: 90,
+        statements: 90,
+      },
     },
   },
 });

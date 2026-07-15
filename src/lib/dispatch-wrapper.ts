@@ -81,6 +81,18 @@ export function extractSwallowedError(result: unknown): string | null {
   return null;
 }
 
+function logSteeringInjection(tool: string, steering: SteeringPayload): void {
+  logger.info({
+    msg: "steering injected for recurring tool error",
+    tool,
+    steering: {
+      pattern_id: steering.pattern_id,
+      recommendation: steering.recommendation,
+      active_notes: steering.active_notes.length,
+    },
+  });
+}
+
 function injectSteering(result: unknown, steering: SteeringPayload): unknown {
   if (!result || typeof result !== "object") return result;
   const r = result as { content?: Array<{ type?: string; text?: string }> };
@@ -128,14 +140,7 @@ export function wrapRegisterTool(server: McpServer): void {
           logger.error({ tool: name, ok: false, ms, err: swallowed, swallowed: true });
           const steering = getSteeringForPattern(name, "error", swallowed);
           if (steering) {
-            logger.warn({
-              tool: name,
-              steering: {
-                pattern_id: steering.pattern_id,
-                recommendation: steering.recommendation,
-                active_notes: steering.active_notes.length,
-              },
-            });
+            logSteeringInjection(name, steering);
             return injectSteering(result, steering);
           }
         } else {
@@ -148,14 +153,7 @@ export function wrapRegisterTool(server: McpServer): void {
         const msg = err instanceof Error ? err.message : String(err);
         const steering = getSteeringForPattern(name, "error", msg);
         if (steering) {
-          logger.warn({
-            tool: name,
-            steering: {
-              pattern_id: steering.pattern_id,
-              recommendation: steering.recommendation,
-              active_notes: steering.active_notes.length,
-            },
-          });
+          logSteeringInjection(name, steering);
         }
         throw err;
       }
