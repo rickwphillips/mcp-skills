@@ -51,6 +51,17 @@ Three architectural features set this server apart:
 | `save_journal_entry` | Persist a journal entry to a dated markdown file |
 | `save_session_note` | Persist a distilled session note with frontmatter |
 
+### Browser (persistent Playwright sessions)
+
+| Name | Purpose |
+|---|---|
+| `playwright_prepare` | Launch headless Chromium (global `@playwright/test`, self-healing install) against a named target from config, complete its auth (jwt localStorage injection / form login / none), return a `session_id` |
+| `playwright_execute` | Run an async JS function body against the live session's `page` (+ `baseUrl` in scope). The session **persists** across calls — even script errors don't consume it |
+| `playwright_close` | Tear down a session's browser |
+| `playwright_sessions` | List active sessions + configured target names |
+
+Sessions expire after 15 minutes idle (reset on every execute). Secrets resolve at prepare time from the macOS Keychain (`security find-generic-password`) or an env var, per the credential's config entry — they are never stored or returned. See **Configure** for `credentials` and `playwrightTargets`.
+
 ### PDF
 
 | Name | Purpose |
@@ -201,6 +212,45 @@ Edit `~/.config/mcp-skills/config.json`:
 
 Connections marked `"env": "prod"` require `confirm: "CONFIRM"` on every write. Connections with an `ssh:` block route through the SSH-shellout adapter.
 
+For the browser tools, add `credentials` and `playwrightTargets`:
+
+```json
+{
+  "credentials": {
+    "app_jwt_dev": {
+      "method": "keychain",
+      "keychain_service": "freddyrhetorick-dev-secrets",
+      "keychain_account": "JWT_SECRET",
+      "kind": "jwt",
+      "user_id": "<auth_users uuid>",
+      "username": "rick"
+    },
+    "site_login": {
+      "method": "env",
+      "secret_env": "SITE_PASSWORD",
+      "username": "rick"
+    }
+  },
+  "playwrightTargets": {
+    "commander-dev": {
+      "base_url": "http://localhost:3001",
+      "auth": "jwt",
+      "credential": "app_jwt_dev",
+      "env": "dev"
+    },
+    "some-form-site": {
+      "base_url": "https://example.com",
+      "auth": "form",
+      "login_path": "/login",
+      "credential": "site_login"
+    },
+    "public-site": { "base_url": "https://example.org", "auth": "none" }
+  }
+}
+```
+
+A credential records only *where* its secret lives (`method: "keychain"` → macOS Keychain service/account, `method: "env"` → env var name); the secret is fetched on demand and never persisted. `kind: "jwt"` credentials mint an HS256 token locally (claims `sub`/`username`/`iat`/`exp`, matching the PHP `jwt_encode`) and inject it into `localStorage` under `storage_key` (default `auth_token`) before first navigation.
+
 Config file is found in this order:
 1. `MCP_SKILLS_CONFIG` env var
 2. `~/.config/mcp-skills/config.json`
@@ -221,9 +271,9 @@ Config file is found in this order:
 
 ### Tool slicing (`MCP_SKILLS_SELECT`)
 
-This is one server with many unrelated tool groups (db, pdf, audio, notes, release, health). In clients without ToolSearch deferral (Claude Desktop, Cursor) every tool schema loads into context eagerly. `MCP_SKILLS_SELECT` registers only the slice you want, so you can define several lightweight entries from the same binary.
+This is one server with many unrelated tool groups (db, browser, pdf, audio, notes, release, health). In clients without ToolSearch deferral (Claude Desktop, Cursor) every tool schema loads into context eagerly. `MCP_SKILLS_SELECT` registers only the slice you want, so you can define several lightweight entries from the same binary.
 
-- Value is a comma- or whitespace-separated list of **group** names (`db`, `pdf`, `audio`, `notes`, `release`, `health`, `resources`) and/or exact **tool** names (`db_read`) for per-tool precision.
+- Value is a comma- or whitespace-separated list of **group** names (`db`, `browser`, `pdf`, `audio`, `notes`, `release`, `health`, `resources`) and/or exact **tool** names (`db_read`) for per-tool precision.
 - `get_version`, `check_for_updates`, and `list_tool_groups` are always registered, so any slice can still report itself.
 - Unset or empty => the full server (unchanged default).
 - Unrecognized tokens are ignored and logged. Call `list_tool_groups` for the live catalog and the names that actually registered.

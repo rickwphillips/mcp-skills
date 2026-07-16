@@ -40,6 +40,11 @@ export const TOOL_GROUPS: Readonly<Record<string, string>> = {
   bump_version: "release",
   deploy: "release",
   cc_status: "release",
+  // browser: persistent in-process Playwright sessions
+  playwright_prepare: "browser",
+  playwright_execute: "browser",
+  playwright_close: "browser",
+  playwright_sessions: "browser",
   // diagnostics, skill-getters, and the self-healing audit loop
   get_boot: "health",
   get_health_agent_skill: "health",
@@ -59,6 +64,7 @@ export const RESOURCE_GROUP = "resources";
 // tool with that group above (kept explicit for the unknown-token warning).
 export const GROUPS: readonly string[] = [
   "db",
+  "browser",
   "pdf",
   "audio",
   "notes",

@@ -20,8 +20,67 @@ export interface ConnectionConfig {
   description?: string;
 }
 
+/**
+ * A named credential whose secret lives wherever the operator put it. The
+ * config records the LOCATION only — the secret itself is fetched on demand
+ * (macOS Keychain or env var) and never stored in this file.
+ */
+export type CredentialConfig = KeychainCredential | EnvCredential;
+
+interface CredentialBase {
+  description?: string;
+  /**
+   * "jwt" credentials mint an HS256 token locally from the fetched secret
+   * (the shared-auth model used by commander/portfolio/grandkid). Requires
+   * user_id + username. Omitted/"password" = plain username+password pair.
+   */
+  kind?: "password" | "jwt";
+  /** JWT subject (auth_users UUID). Required when kind === "jwt". */
+  user_id?: string;
+  /** JWT username claim, or the login username for form logins. */
+  username?: string;
+}
+
+export interface KeychainCredential extends CredentialBase {
+  method: "keychain";
+  /** `security find-generic-password -s <service> -a <account> -w` */
+  keychain_service: string;
+  keychain_account: string;
+}
+
+export interface EnvCredential extends CredentialBase {
+  method: "env";
+  /** Env var holding the secret (password or JWT secret). */
+  secret_env: string;
+}
+
+/**
+ * A named base URL the playwright session tools can drive, with the auth
+ * strategy that gets a fresh browser session logged in.
+ */
+export interface PlaywrightTargetConfig {
+  base_url: string;
+  /**
+   * "jwt": mint an HS256 token from `credential` and inject it into
+   * localStorage under `storage_key` before first navigation.
+   * "form": fill a login form at `login_path` with the credential's
+   * username + secret. "none": no auth (default when omitted).
+   */
+  auth?: "jwt" | "form" | "none";
+  /** Default credential name (a key under `credentials`). */
+  credential?: string;
+  /** localStorage key for the JWT strategy. Default "auth_token". */
+  storage_key?: string;
+  /** Login form path for the form strategy. Default "/login". */
+  login_path?: string;
+  env?: "dev" | "prod";
+  description?: string;
+}
+
 export interface ServerConfig {
   connections: Record<string, ConnectionConfig>;
+  credentials?: Record<string, CredentialConfig>;
+  playwrightTargets?: Record<string, PlaywrightTargetConfig>;
   auditLogPath?: string;
   pdfWorkDir?: string;
 }
@@ -91,4 +150,34 @@ export function getConnection(name: string): ConnectionConfig {
 
 export function listConnections(): string[] {
   return Object.keys(loadConfig().connections);
+}
+
+export function getCredentialConfig(name: string): CredentialConfig {
+  const config = loadConfig();
+  const cred = config.credentials?.[name];
+  if (!cred) {
+    const available = Object.keys(config.credentials ?? {}).join(", ") || "(none configured)";
+    throw new Error(
+      `Unknown credential "${name}". Available: ${available}. ` +
+        `Configure credentials in ${DEFAULT_CONFIG_PATHS[1]}.`,
+    );
+  }
+  return cred;
+}
+
+export function getPlaywrightTarget(name: string): PlaywrightTargetConfig {
+  const config = loadConfig();
+  const target = config.playwrightTargets?.[name];
+  if (!target) {
+    const available = Object.keys(config.playwrightTargets ?? {}).join(", ") || "(none configured)";
+    throw new Error(
+      `Unknown playwright target "${name}". Available: ${available}. ` +
+        `Configure playwrightTargets in ${DEFAULT_CONFIG_PATHS[1]}.`,
+    );
+  }
+  return target;
+}
+
+export function listPlaywrightTargets(): string[] {
+  return Object.keys(loadConfig().playwrightTargets ?? {});
 }

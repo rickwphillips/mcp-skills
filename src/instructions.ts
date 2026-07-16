@@ -4,12 +4,13 @@ Reusable skills for Rick Phillips's projects, exposed as MCP tools. Workspace-ag
 
 ## Verification mindset
 
-When figuring out behavior, reproducing a bug, or sanity-checking a fix: verify rather than guess. Cheap verification means more verification gets done. Two browser-driven surfaces are wired in alongside this server:
+When figuring out behavior, reproducing a bug, or sanity-checking a fix: verify rather than guess. Cheap verification means more verification gets done. Browser-driven surfaces, in preference order:
 
-- **\`mcp__playwright__browser_*\`** — \`@playwright/mcp\` runs as a separate user-scoped MCP plugin, headless. Tool schemas are deferred; load via \`ToolSearch\` with \`query: "playwright"\`. Use for one-shot browser interactions.
-- **Per-project Playwright scratch specs** — for multi-step or repeatable flows, write a throwaway spec instead of chaining MCP browser calls. Currently wired in \`commander-collector/apps/core/e2e/scratch/\` (gitignored, excluded from the default suite via \`testIgnore: ['**/scratch/**']\`). Auth setup mints a JWT locally; \`e2e/helpers.ts\` exposes \`goto\`, \`apiCall\`, \`expectToast\`, \`dismissDialog\`.
+- **Playwright sessions (this server)** — \`playwright_prepare\` launches a headless Chromium against a named target from config (commander/portfolio/grandkid dev+prod, fbi-prod) with auth already completed; \`playwright_execute\` runs async script bodies against the live \`page\` as many times as needed; \`playwright_close\` when done; \`playwright_sessions\` to see what's live. Sessions persist across executes (15-min idle TTL, reset on use). Credentials resolve from the macOS Keychain per config — never inline a secret in a script.
+- **\`mcp__playwright__browser_*\`** — \`@playwright/mcp\` runs as a separate user-scoped MCP plugin, headless. Tool schemas are deferred; load via \`ToolSearch\` with \`query: "playwright"\`. Use for one-shot unauthenticated browser interactions.
+- **Per-project Playwright scratch specs** — for repeatable flows worth keeping as a file. Currently wired in \`commander-collector/apps/core/e2e/scratch/\` (gitignored, excluded from the default suite via \`testIgnore: ['**/scratch/**']\`). Auth setup mints a JWT locally; \`e2e/helpers.ts\` exposes \`goto\`, \`apiCall\`, \`expectToast\`, \`dismissDialog\`.
 
-Reach for the scratch spec when a flow has more than 2-3 steps or you'll run it twice. Pass/fail with an exit code beats per-step snapshots and round-trips.
+For authenticated multi-step verification, the playwright session tools are the default: prepare once, execute stepwise, close when done.
 
 ## Database safety (db_read, db_write, list_db_connections)
 

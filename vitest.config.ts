@@ -9,7 +9,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/lib/**/*.ts"],
-      exclude: ["src/lib/db-pool.ts", "src/lib/ssh-mysql.ts"],
+      exclude: ["src/lib/db-pool.ts", "src/lib/ssh-mysql.ts", "src/lib/playwright-loader.ts"],
       reporter: ["text", "json", "html"],
       thresholds: {
         lines: 90,
