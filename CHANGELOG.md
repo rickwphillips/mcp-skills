@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.0] - 2026-07-16
+
+- Add persistent Playwright browser session tools (playwright_prepare/execute/close/sessions) with keychain-backed credentials and named targets
+
 ## [1.2.1] - 2026-07-15
 
 - Reduce MCP health audit noise: commander deploy e2e-only failures return `DEPLOY_OK_E2E_FAILED` without `isError`; steering injection logs at `info` instead of polluting the warn audit sink; `db_read` tool description adds `SHOW TABLES` / `DESCRIBE` schema-discovery guidance. Adds `deploy-run` classifier, steering log test, and logger env-config coverage.
