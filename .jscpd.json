@@ -1,0 +1,16 @@
+{
+  "threshold": 3,
+  "reporters": ["console"],
+  "gitignore": true,
+  "format": ["typescript", "javascript"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/*.min.*",
+    "**/*.map",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/tests/**"
+  ]
+}
