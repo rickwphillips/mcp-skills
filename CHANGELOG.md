@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.1] - 2026-07-16
+
+- Document host-filesystem screenshot support in the playwright_execute tool description
+
 ## [1.3.0] - 2026-07-16
 
 - Add persistent Playwright browser session tools (playwright_prepare/execute/close/sessions) with keychain-backed credentials and named targets
