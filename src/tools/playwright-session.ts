@@ -57,7 +57,8 @@ export const registerPlaywrightSessionTools = (server: McpServer) => {
         "scope: `page` (Playwright Page) and `baseUrl` (the target's base URL). Return a JSON-serializable " +
         "value with `return`. The session survives the call (even on script error) — chain as many " +
         "executes as needed, then playwright_close. Console errors captured since the last call are " +
-        "included. Example script: `await page.goto(baseUrl + '/dashboard'); return await page.title();`",
+        "included. Host-filesystem writes work: `await page.screenshot({ path: '/abs/path.png' })` saves " +
+        "directly to disk. Example script: `await page.goto(baseUrl + '/dashboard'); return await page.title();`",
       inputSchema: {
         session_id: z.string().describe("Session id from playwright_prepare."),
         script: z
