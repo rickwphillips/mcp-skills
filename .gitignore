@@ -8,3 +8,6 @@ connections.json
 .audit/
 *.tsbuildinfo
 coverage/
+
+# MissionControl injects .claude/skills/diagram + settings.local.json hooks on every session spawn
+.claude/
