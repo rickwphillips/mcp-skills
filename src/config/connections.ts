@@ -125,13 +125,25 @@ function validate(config: ServerConfig, path: string): void {
   }
 }
 
+// Expand a leading "~" to the home directory. The OS does not expand "~" (only
+// shells do), so a config-provided path like "~/.local/share/..." would be taken
+// literally and create a "~" directory in the process CWD. Config paths run
+// through this so a tilde always resolves to $HOME.
+export function expandTilde(p: string): string {
+  if (p === "~") return homedir();
+  if (p.startsWith("~/")) return join(homedir(), p.slice(2));
+  return p;
+}
+
 function withDefaults(config: ServerConfig): ServerConfig {
   return {
     ...config,
-    auditLogPath:
-      config.auditLogPath ??
-      join(homedir(), ".local", "share", "mcp-skills", "write-audit.jsonl"),
-    pdfWorkDir: config.pdfWorkDir ?? join(homedir(), ".cache", "mcp-skills", "pdf"),
+    auditLogPath: config.auditLogPath
+      ? expandTilde(config.auditLogPath)
+      : join(homedir(), ".local", "share", "mcp-skills", "write-audit.jsonl"),
+    pdfWorkDir: config.pdfWorkDir
+      ? expandTilde(config.pdfWorkDir)
+      : join(homedir(), ".cache", "mcp-skills", "pdf"),
   };
 }
 

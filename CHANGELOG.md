@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.0.1] - 2026-07-27
+
+- Fix: a config-provided `auditLogPath` or `pdfWorkDir` with a leading `~` is now expanded to `$HOME` instead of being used literally. The OS does not expand `~`, so the literal value created a stray `~/` directory in the process's working directory (e.g. `db_write` writing its audit log). Added an `expandTilde` helper (exported) and unit tests.
+
+## [2.0.0] - 2026-07-19
+
+- **BREAKING:** The Playwright session tools (`playwright_prepare`, `playwright_execute`, `playwright_close`, `playwright_sessions`) are no longer on the default surface. They now live in an **opt-in `browser` slice** that registers only when `MCP_SKILLS_SELECT` explicitly names the `browser` group or an exact tool name. Clients relying on the default server exposing these tools must add a slice-scoped entry (`MCP_SKILLS_SELECT=browser`) or drive them from a forked sub-agent.
+- Add `get_playwright_skill` — a lightweight, always-in-default-context skill-getter (health group) that returns the agent-guarded browser-verification workflow and steers callers to the `browser` slice. Mirrors `get_worktree_skill` / `get_health_agent_skill`. Keeps the browser tool schemas and verbose page output out of the main context.
+- New `OPT_IN_GROUPS` concept in the tool-slicing manifest: a group excluded under the default/matchAll selector, reachable only by explicit selection. Selector `includes`/`includesGroup` updated; unit + e2e slice tests cover the opt-in behavior.
+
 ## [1.3.1] - 2026-07-16
 
 - Document host-filesystem screenshot support in the playwright_execute tool description

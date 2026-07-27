@@ -36,12 +36,35 @@ describe("tool-groups coverage", () => {
 });
 
 describe("parseSelector", () => {
-  it("unset selector matches all", () => {
+  it("unset selector matches all except opt-in groups", () => {
     const s = parseSelector(undefined);
     expect(s.matchAll).toBe(true);
     expect(s.includes("db_read")).toBe(true);
     expect(s.includes("pdf_merge")).toBe(true);
     expect(s.includesGroup("resources")).toBe(true);
+    // browser is opt-in: excluded under matchAll, but the lightweight getter is not
+    expect(s.includes("playwright_prepare")).toBe(false);
+    expect(s.includes("playwright_execute")).toBe(false);
+    expect(s.includesGroup("browser")).toBe(false);
+    expect(s.includes("get_playwright_skill")).toBe(true);
+  });
+
+  it("opt-in group registers only when explicitly selected", () => {
+    const s = parseSelector("browser");
+    expect(s.includes("playwright_prepare")).toBe(true);
+    expect(s.includes("playwright_execute")).toBe(true);
+    expect(s.includes("playwright_close")).toBe(true);
+    expect(s.includes("playwright_sessions")).toBe(true);
+    expect(s.includesGroup("browser")).toBe(true);
+    // other slices stay out
+    expect(s.includes("db_read")).toBe(false);
+  });
+
+  it("opt-in group is reachable by an exact tool-name token", () => {
+    const s = parseSelector("playwright_execute");
+    expect(s.includes("playwright_execute")).toBe(true);
+    expect(s.includes("playwright_prepare")).toBe(false);
+    expect(s.includesGroup("browser")).toBe(true);
   });
 
   it("empty / whitespace selector matches all", () => {

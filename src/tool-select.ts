@@ -3,7 +3,7 @@
 // group names (e.g. "db") or exact tool names (e.g. "db_read") for per-tool
 // precision. Unset / empty => full server.
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ALWAYS_ON, GROUPS, RESOURCE_GROUP, TOOL_GROUPS } from "./tool-groups.js";
+import { ALWAYS_ON, GROUPS, OPT_IN_GROUPS, RESOURCE_GROUP, TOOL_GROUPS } from "./tool-groups.js";
 
 export interface Selector {
   raw: string;
@@ -40,12 +40,26 @@ export function parseSelector(raw: string | undefined): Selector {
     unknown,
     includes(toolName: string): boolean {
       if (ALWAYS_ON.includes(toolName)) return true;
+      const g = TOOL_GROUPS[toolName];
+      // Opt-in groups never ride along with matchAll; they require an explicit
+      // group token or the exact tool name.
+      if (g !== undefined && OPT_IN_GROUPS.has(g)) {
+        return groups.has(g) || names.has(toolName);
+      }
       if (matchAll) return true;
       if (names.has(toolName)) return true;
-      const g = TOOL_GROUPS[toolName];
       return g !== undefined && groups.has(g);
     },
     includesGroup(group: string): boolean {
+      // Opt-in groups are untouched under matchAll; only an explicit group token
+      // or a per-tool name belonging to the group counts.
+      if (OPT_IN_GROUPS.has(group)) {
+        if (groups.has(group)) return true;
+        for (const n of names) {
+          if (TOOL_GROUPS[n] === group) return true;
+        }
+        return false;
+      }
       if (matchAll) return true;
       if (groups.has(group)) return true;
       // A per-tool token belonging to this group also touches it (e.g.

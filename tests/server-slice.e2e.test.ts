@@ -22,6 +22,12 @@ const PDF_TOOLS = [
   "pdf_encrypt",
   "pdf_decrypt",
 ];
+const BROWSER_TOOLS = [
+  "playwright_prepare",
+  "playwright_execute",
+  "playwright_close",
+  "playwright_sessions",
+];
 
 // Spawn the built server with the given selector and return its advertised tool
 // names. select === null => MCP_SKILLS_SELECT deleted from the child env.
@@ -95,7 +101,12 @@ describe("server slice (e2e over stdio)", () => {
     expect(names).toEqual([...ALWAYS_ON, ...DB_TOOLS, ...PDF_TOOLS].sort());
   });
 
-  it("unset selector exposes the full server (superset of every slice)", async () => {
+  it("MCP_SKILLS_SELECT=browser exposes only the opt-in browser slice plus always-on", async () => {
+    const names = await listTools("browser");
+    expect(names).toEqual([...ALWAYS_ON, ...BROWSER_TOOLS].sort());
+  });
+
+  it("unset selector exposes the full server EXCEPT the opt-in browser slice", async () => {
     const names = await listTools(null);
     for (const t of [...ALWAYS_ON, ...DB_TOOLS, ...PDF_TOOLS]) {
       expect(names).toContain(t);
@@ -110,6 +121,12 @@ describe("server slice (e2e over stdio)", () => {
     ]) {
       expect(names).toContain(t);
     }
+    // the guarded browser slice is absent from the default surface...
+    for (const t of BROWSER_TOOLS) {
+      expect(names).not.toContain(t);
+    }
+    // ...but the lightweight skill-getter that steers to it is present
+    expect(names).toContain("get_playwright_skill");
     // full server is strictly larger than the db slice
     expect(names.length).toBeGreaterThan(DB_TOOLS.length + ALWAYS_ON.length);
   });

@@ -48,10 +48,18 @@ Three architectural features set this server apart:
 |---|---|
 | `deploy` | Deploy commander / portfolio / grandkid; preflight gates for git-clean and commander migration location |
 | `get_worktree_skill` | Returns the worktree proposal workflow. Reactive: fetch on context-switch language. Embeds `scripts/worktree.sh` (repo-agnostic). |
+| `get_playwright_skill` | Returns the agent-guarded browser-verification workflow. Reactive: fetch when you need authenticated, multi-step browser checks. Steers to the opt-in `browser` slice (see below). |
 | `save_journal_entry` | Persist a journal entry to a dated markdown file |
 | `save_session_note` | Persist a distilled session note with frontmatter |
 
-### Browser (persistent Playwright sessions)
+### Browser (persistent Playwright sessions — opt-in `browser` slice)
+
+**These tools are NOT on the default surface.** Since v2.0.0 the `browser` slice is
+opt-in: its four tools register only when `MCP_SKILLS_SELECT` explicitly names the
+`browser` group (or an exact tool name). The default `mcp-skills` server carries only
+the lightweight `get_playwright_skill` getter, keeping the browser schemas and verbose
+page output out of the main context. Reach the live tools by forking a sub-agent, or by
+adding a sibling server entry (e.g. `mcp-skills-browser`) with `env` `MCP_SKILLS_SELECT=browser`.
 
 | Name | Purpose |
 |---|---|
@@ -275,12 +283,14 @@ This is one server with many unrelated tool groups (db, browser, pdf, audio, not
 
 - Value is a comma- or whitespace-separated list of **group** names (`db`, `browser`, `pdf`, `audio`, `notes`, `release`, `health`, `resources`) and/or exact **tool** names (`db_read`) for per-tool precision.
 - `get_version`, `check_for_updates`, and `list_tool_groups` are always registered, so any slice can still report itself.
-- Unset or empty => the full server (unchanged default).
+- Unset or empty => the full server **except opt-in groups** (see below).
+- `browser` is an **opt-in** group: it never rides along with the default selector — it registers only when `browser` (or one of its exact tool names) is named explicitly. The default surface carries only the `get_playwright_skill` getter. This keeps the persistent-session tools and their verbose output out of the main context; fork a sub-agent or run a dedicated `browser` entry to use them.
 - Unrecognized tokens are ignored and logged. Call `list_tool_groups` for the live catalog and the names that actually registered.
 
 ```jsonc
-"skills-db":  { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "db" } },
-"skills-pdf": { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "pdf" } }
+"skills-db":      { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "db" } },
+"skills-pdf":     { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "pdf" } },
+"skills-browser": { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "browser" } }
 ```
 
 In Claude Code, deferral already keeps unused schemas out of context, so the single full entry is fine there.

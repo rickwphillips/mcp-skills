@@ -40,7 +40,11 @@ export const TOOL_GROUPS: Readonly<Record<string, string>> = {
   bump_version: "release",
   deploy: "release",
   cc_status: "release",
-  // browser: persistent in-process Playwright sessions
+  // browser: persistent in-process Playwright sessions. OPT-IN group (see
+  // OPT_IN_GROUPS): never registers under the default/matchAll selector — the
+  // main context carries only the lightweight get_playwright_skill getter, and
+  // these live tools register only when a client (or a forked sub-agent) selects
+  // MCP_SKILLS_SELECT=browser.
   playwright_prepare: "browser",
   playwright_execute: "browser",
   playwright_close: "browser",
@@ -49,11 +53,21 @@ export const TOOL_GROUPS: Readonly<Record<string, string>> = {
   get_boot: "health",
   get_health_agent_skill: "health",
   get_worktree_skill: "health",
+  get_playwright_skill: "health",
   summarize_mcp_errors: "health",
   mark_mcp_pattern_resolved: "health",
   record_pattern_note: "health",
   mark_pattern_note: "health",
 };
+
+// Opt-in groups are excluded under the default (matchAll) selector: their tools
+// register ONLY when the group name (or one of its exact tool names) is passed in
+// MCP_SKILLS_SELECT. This keeps a heavy or rarely-used slice out of the default
+// context while leaving it reachable on demand — e.g. a forked sub-agent, or a
+// sibling `mcp-skills-browser` config entry with MCP_SKILLS_SELECT=browser. The
+// `browser` slice is agent-guarded this way; the main context sees only the
+// lightweight get_playwright_skill getter (health group).
+export const OPT_IN_GROUPS: ReadonlySet<string> = new Set(["browser"]);
 
 // Resource registrars are group-granular too (resource descriptors also load
 // eagerly in clients without deferral). All project resources live in one group.

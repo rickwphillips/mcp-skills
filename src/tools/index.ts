@@ -23,6 +23,7 @@ import { registerHealthAgentSkillTool } from "./health.js";
 import { registerGetBootTool } from "./boot.js";
 import { registerWorktreeSkillTool } from "./worktree.js";
 import { registerPlaywrightSessionTools } from "./playwright-session.js";
+import { registerPlaywrightSkillTool } from "./playwright-skill.js";
 
 export const registerTools = (server: McpServer) => {
   registerGetVersionTool(server);
@@ -48,5 +49,6 @@ export const registerTools = (server: McpServer) => {
   registerHealthAgentSkillTool(server);
   registerGetBootTool(server);
   registerWorktreeSkillTool(server);
+  registerPlaywrightSkillTool(server);
   registerPlaywrightSessionTools(server);
 };

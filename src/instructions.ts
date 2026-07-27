@@ -6,11 +6,11 @@ Reusable skills for Rick Phillips's projects, exposed as MCP tools. Workspace-ag
 
 When figuring out behavior, reproducing a bug, or sanity-checking a fix: verify rather than guess. Cheap verification means more verification gets done. Browser-driven surfaces, in preference order:
 
-- **Playwright sessions (this server)** — \`playwright_prepare\` launches a headless Chromium against a named target from config (commander/portfolio/grandkid dev+prod, fbi-prod) with auth already completed; \`playwright_execute\` runs async script bodies against the live \`page\` as many times as needed; \`playwright_close\` when done; \`playwright_sessions\` to see what's live. Sessions persist across executes (15-min idle TTL, reset on use). Credentials resolve from the macOS Keychain per config — never inline a secret in a script.
+- **Playwright sessions (this server, agent-guarded)** — for authenticated, multi-step verification against a named target (commander/portfolio/grandkid dev+prod, fbi-prod). The live session tools (\`playwright_prepare/execute/close/sessions\`) are NOT on the default surface; they live in the opt-in \`browser\` slice so their schemas and verbose page output stay out of the main context. Fetch \`get_playwright_skill\` for the workflow — it explains how to reach the tools via a forked sub-agent or a \`MCP_SKILLS_SELECT=browser\` server entry, and embeds the prepare→execute→close steps, target list, and credential-safety rules.
 - **\`mcp__playwright__browser_*\`** — \`@playwright/mcp\` runs as a separate user-scoped MCP plugin, headless. Tool schemas are deferred; load via \`ToolSearch\` with \`query: "playwright"\`. Use for one-shot unauthenticated browser interactions.
 - **Per-project Playwright scratch specs** — for repeatable flows worth keeping as a file. Currently wired in \`commander-collector/apps/core/e2e/scratch/\` (gitignored, excluded from the default suite via \`testIgnore: ['**/scratch/**']\`). Auth setup mints a JWT locally; \`e2e/helpers.ts\` exposes \`goto\`, \`apiCall\`, \`expectToast\`, \`dismissDialog\`.
 
-For authenticated multi-step verification, the playwright session tools are the default: prepare once, execute stepwise, close when done.
+For authenticated multi-step verification, fetch \`get_playwright_skill\` and run the browser tools inside the guard: prepare once, execute stepwise, close when done.
 
 ## Database safety (db_read, db_write, list_db_connections)
 

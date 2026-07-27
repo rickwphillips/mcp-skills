@@ -11,3 +11,6 @@ coverage/
 
 # MissionControl injects .claude/skills/diagram + settings.local.json hooks on every session spawn
 .claude/
+
+# local runtime data (sqlite db)
+/data/
