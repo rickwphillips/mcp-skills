@@ -14,3 +14,6 @@ coverage/
 
 # local runtime data (sqlite db)
 /data/
+
+# machine-local agent config
+.opencode/
