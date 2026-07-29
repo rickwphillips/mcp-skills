@@ -31,6 +31,41 @@ describe("deploy-run classification", () => {
     expect(classifyDeployRun(run)).toBe("e2e_failed");
   });
 
+  it("classifies exit 20 as e2e-only regardless of stdout wording", () => {
+    // The current deploy-commander.sh says "the Playwright suite" and "the
+    // build is live in production", matching neither legacy marker. The exit
+    // code is what makes this robust to wording changes.
+    const run = baseRun({
+      exit_code: 20,
+      stdout:
+        "  DEPLOY SUCCEEDED — POST-DEPLOY TESTS FAILED\n" +
+        "  The build is live in production. The failure below\n" +
+        "  is the Playwright suite (exit 1), not the deploy.\n",
+    });
+    expect(isE2eOnlyFailure(run)).toBe(true);
+    expect(classifyDeployRun(run)).toBe("e2e_failed");
+  });
+
+  it("classifies exit 20 as e2e-only even with empty stdout", () => {
+    // Guards the original bug: set -e aborted before any marker was printed.
+    const run = baseRun({ exit_code: 20, stdout: "" });
+    expect(classifyDeployRun(run)).toBe("e2e_failed");
+  });
+
+  it("reports exit 20 as DEPLOY_OK_E2E_FAILED without isError", () => {
+    const run = baseRun({ exit_code: 20, stdout: "" });
+    expect(summarizeDeployRuns([run])).toEqual({
+      status: "DEPLOY_OK_E2E_FAILED",
+      outcomes: ["e2e_failed"],
+      isError: false,
+    });
+  });
+
+  it("still treats a bare exit 1 with no markers as a real failure", () => {
+    // Regression guard: exit 20 must not widen into "any non-zero is fine".
+    expect(classifyDeployRun(baseRun({ exit_code: 1, stdout: "" }))).toBe("failed");
+  });
+
   it("classifies a non-zero exit without e2e markers as failed", () => {
     const run = baseRun({ exit_code: 1, stdout: "npm run build failed" });
     expect(classifyDeployRun(run)).toBe("failed");
