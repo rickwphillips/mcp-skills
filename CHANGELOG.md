@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.1.0] - 2026-07-29
+
+- Add opt-in MCP Apps 'apps' slice: ops_console tool + ui:// Ops Console (Preact shell + Fleet tab), esbuild app pipeline, server logo icons
+
 ## [2.0.2] - 2026-07-29
 
 - Fix: `deploy` recognises exit code 20 as "deployed and live, post-deploy tests failed" instead of relying solely on stdout markers. deploy-commander.sh runs its suite under `set -e`, so a failing test run aborted before the "tests failed / deploy is live" warning printed — detection fell through and a healthy live deploy was reported as PARTIAL_FAILURE with `isError` set (170 such entries in the audit log). Exports `DEPLOY_OK_E2E_FAILED_EXIT`; stdout markers remain as a fallback for scripts that have not adopted the exit code yet (portfolio, grandkid).
