@@ -7,6 +7,9 @@ dist/
 connections.json
 .audit/
 *.tsbuildinfo
+
+# emitted by scripts/build-apps.mjs (npm run build:apps)
+src/generated/
 coverage/
 
 # MissionControl injects .claude/skills/diagram + settings.local.json hooks on every session spawn

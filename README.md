@@ -279,18 +279,26 @@ Config file is found in this order:
 
 ### Tool slicing (`MCP_SKILLS_SELECT`)
 
-This is one server with many unrelated tool groups (db, browser, pdf, audio, notes, release, health). In clients without ToolSearch deferral (Claude Desktop, Cursor) every tool schema loads into context eagerly. `MCP_SKILLS_SELECT` registers only the slice you want, so you can define several lightweight entries from the same binary.
+This is one server with many unrelated tool groups (db, browser, pdf, audio, notes, release, health, apps). In clients without ToolSearch deferral (Claude Desktop, Cursor) every tool schema loads into context eagerly. `MCP_SKILLS_SELECT` registers only the slice you want, so you can define several lightweight entries from the same binary.
 
-- Value is a comma- or whitespace-separated list of **group** names (`db`, `browser`, `pdf`, `audio`, `notes`, `release`, `health`, `resources`) and/or exact **tool** names (`db_read`) for per-tool precision.
+- Value is a comma- or whitespace-separated list of **group** names (`db`, `browser`, `pdf`, `audio`, `notes`, `release`, `health`, `apps`, `resources`) and/or exact **tool** names (`db_read`) for per-tool precision.
 - `get_version`, `check_for_updates`, and `list_tool_groups` are always registered, so any slice can still report itself.
 - Unset or empty => the full server **except opt-in groups** (see below).
 - `browser` is an **opt-in** group: it never rides along with the default selector — it registers only when `browser` (or one of its exact tool names) is named explicitly. The default surface carries only the `get_playwright_skill` getter. This keeps the persistent-session tools and their verbose output out of the main context; fork a sub-agent or run a dedicated `browser` entry to use them.
+- `apps` is also **opt-in**: it holds the MCP Apps surfaces (the `ops_console` tool plus its `ui://mcp-skills/ops-console` HTML resource, ~320 KB). In hosts that support MCP Apps (Claude, Claude Desktop) the tool renders an interactive fleet console in-conversation; everywhere else it degrades to the same status as plain text. The tool and its resource always register together.
 - Unrecognized tokens are ignored and logged. Call `list_tool_groups` for the live catalog and the names that actually registered.
 
 ```jsonc
 "skills-db":      { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "db" } },
 "skills-pdf":     { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "pdf" } },
-"skills-browser": { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "browser" } }
+"skills-browser": { "command": "node", "args": ["/abs/dist/server.js"], "env": { "MCP_SKILLS_SELECT": "browser" } },
+// MCP Apps slice (Claude Desktop): use an absolute node path — GUI apps don't
+// inherit nvm's PATH.
+"mcp-skills-apps": {
+  "command": "/Users/you/.nvm/versions/node/v24/bin/node",
+  "args": ["/abs/dist/server.js"],
+  "env": { "MCP_SKILLS_SELECT": "apps" }
+}
 ```
 
 In Claude Code, deferral already keeps unused schemas out of context, so the single full entry is fine there.
