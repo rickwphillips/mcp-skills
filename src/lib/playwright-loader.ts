@@ -1,5 +1,5 @@
 // playwright-loader.ts — resolve chromium from the ACTIVE Node's GLOBAL
-// @playwright/test install, self-healing on a miss (ported from newsbank-mcp).
+// @playwright/test install, self-healing on a miss (ported from an earlier internal MCP server).
 //
 // Global installs are per-Node under nvm, so the global folder is empty on any
 // Node that never had `npm install -g @playwright/test` run against it. On a

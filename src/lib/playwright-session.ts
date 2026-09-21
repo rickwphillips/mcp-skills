@@ -1,6 +1,6 @@
 // playwright-session.ts — in-process Playwright session management.
 //
-// Ported from the newsbank-mcp playwright_prepare/playwright_execute model,
+// Ported from an earlier internal MCP server's playwright_prepare/playwright_execute model,
 // with one deliberate change: sessions PERSIST across execute calls. A session
 // lives until playwright_close or 15 minutes of inactivity (the TTL resets on
 // every use), so one logged-in browser profile can serve a whole multi-step
