@@ -28,6 +28,7 @@ const BROWSER_TOOLS = [
   "playwright_close",
   "playwright_sessions",
 ];
+const APPS_TOOLS = ["ops_console"];
 
 // Spawn the built server with the given selector and return its advertised tool
 // names. select === null => MCP_SKILLS_SELECT deleted from the child env.
@@ -106,6 +107,11 @@ describe("server slice (e2e over stdio)", () => {
     expect(names).toEqual([...ALWAYS_ON, ...BROWSER_TOOLS].sort());
   });
 
+  it("MCP_SKILLS_SELECT=apps exposes only the opt-in apps slice plus always-on", async () => {
+    const names = await listTools("apps");
+    expect(names).toEqual([...ALWAYS_ON, ...APPS_TOOLS].sort());
+  });
+
   it("unset selector exposes the full server EXCEPT the opt-in browser slice", async () => {
     const names = await listTools(null);
     for (const t of [...ALWAYS_ON, ...DB_TOOLS, ...PDF_TOOLS]) {
@@ -121,8 +127,8 @@ describe("server slice (e2e over stdio)", () => {
     ]) {
       expect(names).toContain(t);
     }
-    // the guarded browser slice is absent from the default surface...
-    for (const t of BROWSER_TOOLS) {
+    // the guarded browser and apps slices are absent from the default surface...
+    for (const t of [...BROWSER_TOOLS, ...APPS_TOOLS]) {
       expect(names).not.toContain(t);
     }
     // ...but the lightweight skill-getter that steers to it is present

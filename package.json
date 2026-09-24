@@ -1,6 +1,6 @@
 {
   "name": "mcp-skills",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "Agent-agnostic MCP server exposing reusable database, PDF, and workflow skills as Tools and Resources.",
   "license": "MIT",
   "author": "Rick Phillips",
@@ -19,10 +19,12 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build:apps && tsc",
+    "build:apps": "node scripts/build-apps.mjs",
+    "dev:apps": "node scripts/build-apps.mjs --watch",
     "start": "node dist/server.js",
     "dev": "tsc --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run build:apps && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -37,8 +39,11 @@
     "zod-to-json-schema": "^3.24.1"
   },
   "devDependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.7.5",
     "@types/node": "^22.10.2",
     "@vitest/coverage-v8": "^4.1.6",
+    "esbuild": "^0.28.1",
+    "preact": "^10.29.7",
     "typescript": "^5.7.2",
     "vitest": "^4.1.6"
   },

@@ -9,8 +9,10 @@ import { backgroundBootCheck } from "./update-check.js";
 import { SERVER_INSTRUCTIONS } from "./instructions.js";
 import { wrapRegisterTool } from "./lib/dispatch-wrapper.js";
 import { parseSelector, applySliceFilter } from "./tool-select.js";
-import { RESOURCE_GROUP } from "./tool-groups.js";
+import { RESOURCE_GROUP, APPS_GROUP } from "./tool-groups.js";
+import { registerAppResources } from "./resources/apps.js";
 import { logger } from "./lib/logger.js";
+import { SERVER_ICONS } from "./config/icon.js";
 
 const versionInfo = getVersionInfo();
 
@@ -18,6 +20,7 @@ const server = new McpServer(
   {
     name: versionInfo.name,
     version: versionInfo.version,
+    icons: SERVER_ICONS,
   },
   {
     instructions: SERVER_INSTRUCTIONS,
@@ -43,6 +46,12 @@ registerTools(server);
 // they are gated by the same selector (always on when no slice is selected).
 if (selector.includesGroup(RESOURCE_GROUP)) {
   registerResources(server);
+}
+
+// ui:// resources for the MCP Apps slice travel with the apps tool group (an
+// opt-in group, so neither tool nor resource registers on the default surface).
+if (selector.includesGroup(APPS_GROUP)) {
+  registerAppResources(server);
 }
 
 if (selector.unknown.length > 0) {

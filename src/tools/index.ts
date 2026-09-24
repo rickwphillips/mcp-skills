@@ -24,6 +24,7 @@ import { registerGetBootTool } from "./boot.js";
 import { registerWorktreeSkillTool } from "./worktree.js";
 import { registerPlaywrightSessionTools } from "./playwright-session.js";
 import { registerPlaywrightSkillTool } from "./playwright-skill.js";
+import { registerOpsConsoleTool } from "./ops-console.js";
 
 export const registerTools = (server: McpServer) => {
   registerGetVersionTool(server);
@@ -51,4 +52,5 @@ export const registerTools = (server: McpServer) => {
   registerWorktreeSkillTool(server);
   registerPlaywrightSkillTool(server);
   registerPlaywrightSessionTools(server);
+  registerOpsConsoleTool(server);
 };

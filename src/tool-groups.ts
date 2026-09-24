@@ -49,6 +49,10 @@ export const TOOL_GROUPS: Readonly<Record<string, string>> = {
   playwright_execute: "browser",
   playwright_close: "browser",
   playwright_sessions: "browser",
+  // apps: MCP Apps UI surfaces (SEP-1865). OPT-IN group like browser — the
+  // ops_console tool ships a ~320KB ui:// HTML resource, so it registers only
+  // when a client selects MCP_SKILLS_SELECT=apps.
+  ops_console: "apps",
   // diagnostics, skill-getters, and the self-healing audit loop
   get_boot: "health",
   get_health_agent_skill: "health",
@@ -67,7 +71,11 @@ export const TOOL_GROUPS: Readonly<Record<string, string>> = {
 // sibling `mcp-skills-browser` config entry with MCP_SKILLS_SELECT=browser. The
 // `browser` slice is agent-guarded this way; the main context sees only the
 // lightweight get_playwright_skill getter (health group).
-export const OPT_IN_GROUPS: ReadonlySet<string> = new Set(["browser"]);
+export const OPT_IN_GROUPS: ReadonlySet<string> = new Set(["browser", "apps"]);
+
+// MCP Apps slice: the ops_console tool plus its ui:// resource (registered in
+// server.ts behind this same group so tool and resource always travel together).
+export const APPS_GROUP = "apps";
 
 // Resource registrars are group-granular too (resource descriptors also load
 // eagerly in clients without deferral). All project resources live in one group.
@@ -84,5 +92,6 @@ export const GROUPS: readonly string[] = [
   "notes",
   "release",
   "health",
+  "apps",
   RESOURCE_GROUP,
 ];
