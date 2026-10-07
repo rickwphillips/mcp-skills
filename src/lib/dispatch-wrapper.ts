@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { logger } from "./logger.js";
 import { getSteeringForPattern, type SteeringPayload } from "./audit-patterns.js";
+import { describeFailureCause } from "./failure-cause.js";
 
 function safeStringify(v: unknown): string {
   try {
@@ -59,10 +60,19 @@ function pickErrorMessage(obj: Record<string, unknown>): string | null {
   return null;
 }
 
+function describeIsError(content: Array<{ type?: string; text?: string }> | undefined): string | null {
+  for (const block of content ?? []) {
+    if (block?.type !== "text" || typeof block.text !== "string") continue;
+    const cause = describeFailureCause(block.text);
+    if (cause) return cause;
+  }
+  return null;
+}
+
 export function extractSwallowedError(result: unknown): string | null {
   if (!result || typeof result !== "object") return null;
   const r = result as { isError?: boolean; content?: Array<{ type?: string; text?: string }> };
-  if (r.isError === true) return "isError flag set on tool result";
+  if (r.isError === true) return describeIsError(r.content) ?? "isError flag set on tool result";
   if (!Array.isArray(r.content)) return null;
   for (const block of r.content) {
     if (block?.type !== "text" || typeof block.text !== "string") continue;
