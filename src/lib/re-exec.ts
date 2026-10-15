@@ -1,8 +1,13 @@
 import { spawn } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { parseRabinSections, type Section } from "./re-binary.js";
+
+// dist/lib/re-exec.js -> package root, so the bundled Ghidra scripts are found
+// wherever the package is installed rather than only on the author's machine.
+const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 /**
  * Shared process-exec helper for the binary-reverse-engineering (`re`) tool
@@ -89,9 +94,10 @@ export function resolveTargetPath(input: string, maxBytes = 512 * 1024 * 1024): 
 export const RE_TOOLS = {
   capa: resolve(homedir(), ".local/bin/capa"),
   ghidraHeadless: resolve(homedir(), "tools/ghidra/support/analyzeHeadless"),
-  // Our own GhidraScript(s), kept outside the Ghidra install so an upgrade
-  // (re-extracting a new release zip over ~/tools/ghidra) doesn't wipe them.
-  ghidraScriptsDir: resolve(homedir(), "tools/ghidra-scripts"),
+  // Our own GhidraScripts, shipped with this package (see the `files` field)
+  // so they travel with an npm install, and kept outside the Ghidra install so
+  // an upgrade (re-extracting a release zip over ~/tools/ghidra) can't wipe them.
+  ghidraScriptsDir: resolve(PACKAGE_ROOT, "ghidra-scripts"),
   patchBytesScript: resolve(homedir(), "tools/mcp-re-scripts/patch_bytes.py"),
   // Homebrew's openjdk is keg-only (not linked), so Ghidra needs JAVA_HOME
   // passed explicitly rather than relying on the default `java` on PATH.

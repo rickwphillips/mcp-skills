@@ -94,6 +94,13 @@ describe("runGhidraHeadless", () => {
     expect(runRe).not.toHaveBeenCalled();
   });
 
+  it("reports a missing bundled script without spawning", async () => {
+    toolExists.mockImplementation((p: string) => !p.endsWith("S.java"));
+    const r = await runGhidraHeadless("/t", "S.java", []);
+    expect(r).toMatchObject({ ok: false, error: "Bundled Ghidra script missing: /fake/scripts/S.java" });
+    expect(runRe).not.toHaveBeenCalled();
+  });
+
   it("passes the script, args and JAVA_HOME through and returns stdout", async () => {
     runRe.mockResolvedValue({ exit_code: 0, signal: null, stdout: "out", stderr: "", timed_out: false });
     const r = await runGhidraHeadless("/t", "S.java", ["a", "b"], { timeoutMs: 5 });

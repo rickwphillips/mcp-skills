@@ -52,7 +52,7 @@ export const registerBinXrefDecompileTool = (server: McpServer) => {
             status: "ERROR",
             input: abs,
             string: needle,
-            message: out.error ?? `${SCRIPT} produced no summary; is it installed in ~/tools/ghidra-scripts?`,
+            message: out.error ?? `${SCRIPT} produced no summary; the analysis may have been cut short.`,
             raw_log: result.stdout.slice(-4000),
           },
           true,

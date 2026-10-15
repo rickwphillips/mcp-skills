@@ -61,6 +61,12 @@ export async function runGhidraHeadless(
       error: `Ghidra not found at ${RE_TOOLS.ghidraHeadless}. Expected an extracted Ghidra install under ~/tools/ghidra.`,
     };
   }
+  // The scripts ship with this package, so a missing one means a broken or
+  // partial install rather than anything about the target binary.
+  const scriptPath = join(RE_TOOLS.ghidraScriptsDir, scriptName);
+  if (!toolExists(scriptPath)) {
+    return { ok: false, stdout: "", error: `Bundled Ghidra script missing: ${scriptPath}` };
+  }
 
   const projectDir = await mkdtemp(join(tmpdir(), "mcp-skills-ghidra-"));
   try {
