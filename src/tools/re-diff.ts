@@ -1,6 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { runRe, resolveTargetPath } from "../lib/re-exec.js";
+import { readFile } from "node:fs/promises";
+import { readSections, resolveTargetPath, runRe } from "../lib/re-exec.js";
+import { diffByteRanges, offsetToVaddr } from "../lib/re-binary.js";
 
 const MAX_LIMIT = 2000;
 
@@ -35,7 +37,10 @@ export const registerBinDiffTool = (server: McpServer) => {
         "every function, report MATCH/UNMATCH + a similarity score). Read-only, never executes either " +
         "target. The core patch-diffing tool: confirm a patch changed exactly the function you intended " +
         "and nothing else, or spot what changed between two builds. Slow on large binaries since both " +
-        "sides get full analysis first.",
+        "sides get full analysis first. Also reports a BYTE-level diff, which matters because " +
+        "radare2's function detection is sparse on some binaries: a change outside every function it " +
+        "found yields zero changed functions even though bytes differ, so check changed_bytes before " +
+        "reading a clean function diff as proof a patch was isolated.",
       inputSchema,
     },
     async ({ input_a, input_b, only_changed, limit }) => {
@@ -44,7 +49,12 @@ export const registerBinDiffTool = (server: McpServer) => {
       const cap = limit ?? 200;
       const onlyChanged = only_changed ?? true;
 
-      const result = await runRe("radiff2", ["-AC", "-j", absA, absB], { timeoutMs: 120_000 });
+      const [result, bufA, bufB, sectionsA] = await Promise.all([
+        runRe("radiff2", ["-AC", "-j", absA, absB], { timeoutMs: 120_000 }),
+        readFile(absA),
+        readFile(absB),
+        readSections(absA),
+      ]);
 
       if (result.exit_code !== 0 || !result.stdout.trim()) {
         return {
@@ -93,6 +103,26 @@ export const registerBinDiffTool = (server: McpServer) => {
         };
       }
 
+      const byteDiff = diffByteRanges(bufA, bufB);
+      // Does each changed byte range fall inside a function radiff2 actually
+      // compared? If not, a clean function diff says nothing about that change.
+      const ranges = byteDiff.ranges.map((r) => {
+        const m = offsetToVaddr(sectionsA, r.start);
+        const fn = m
+          ? entries.find(
+              (e) => e.addr !== undefined && e.size !== undefined && m.vaddr >= e.addr && m.vaddr < e.addr + e.size,
+            )
+          : undefined;
+        return {
+          file_offset: `0x${r.start.toString(16)}`,
+          length: r.length,
+          section: m?.section ?? null,
+          vaddr: m ? `0x${m.vaddr.toString(16)}` : null,
+          in_analyzed_function: fn?.name ?? null,
+        };
+      });
+      const unanalyzed = ranges.filter((r) => r.in_analyzed_function === null).length;
+
       const totalFunctions = entries.length;
       const filtered = onlyChanged ? entries.filter((e) => e.match !== "MATCH") : entries;
       const totalMatched = filtered.length;
@@ -110,6 +140,22 @@ export const registerBinDiffTool = (server: McpServer) => {
                 only_changed: onlyChanged,
                 total_functions: totalFunctions,
                 changed_functions: entries.filter((e) => e.match !== "MATCH").length,
+                bytes: {
+                  identical: byteDiff.identical,
+                  size_a: byteDiff.size_a,
+                  size_b: byteDiff.size_b,
+                  changed_bytes: byteDiff.changed_bytes,
+                  tail_bytes: byteDiff.tail_bytes,
+                  changed_ranges_total: byteDiff.ranges_total,
+                  changed_ranges: ranges,
+                },
+                note:
+                  byteDiff.changed_bytes > 0 && entries.every((e) => e.match === "MATCH")
+                    ? `${byteDiff.changed_bytes} byte(s) differ but every analyzed function MATCHes` +
+                      (unanalyzed > 0
+                        ? `: ${unanalyzed} of ${ranges.length} changed range(s) lie outside any function radare2 found, so the function diff cannot speak to them.`
+                        : ", so the changes fall between functions (padding, headers, data).")
+                    : null,
                 returned: Math.min(totalMatched, cap),
                 truncated,
                 diffs: filtered.slice(0, cap).map((e) => ({

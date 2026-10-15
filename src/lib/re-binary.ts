@@ -257,3 +257,68 @@ export function findDataXrefs(
   });
   return { hits, total: all.length };
 }
+
+export type ByteRange = { start: number; end: number; length: number };
+
+export type ByteDiff = {
+  identical: boolean;
+  size_a: number;
+  size_b: number;
+  compared_bytes: number;
+  changed_bytes: number;
+  tail_bytes: number;
+  ranges: ByteRange[];
+  ranges_total: number;
+};
+
+/**
+ * Byte-level diff of two buffers. Runs of differing bytes separated by fewer
+ * than `mergeGap` equal bytes are reported as one range, so a patched
+ * instruction reads as a single change instead of several. `tail_bytes` counts
+ * bytes past the shorter file's end, which are reported but never compared.
+ */
+export function diffByteRanges(
+  a: Uint8Array,
+  b: Uint8Array,
+  opts: { mergeGap?: number; max?: number } = {},
+): ByteDiff {
+  const gap = opts.mergeGap ?? 8;
+  const max = opts.max ?? 100;
+  const common = Math.min(a.length, b.length);
+  const ranges: ByteRange[] = [];
+  let changed = 0;
+  let total = 0;
+  let open: ByteRange | null = null;
+
+  const close = () => {
+    if (!open) return;
+    if (ranges.length < max) ranges.push(open);
+    total++;
+    open = null;
+  };
+
+  for (let i = 0; i < common; i++) {
+    if (a[i] === b[i]) {
+      // leave `open` alone until the equal run is long enough to split it.
+      // open.end is exclusive, so the run seen so far is i - open.end + 1.
+      if (open && i - open.end + 1 >= gap) close();
+      continue;
+    }
+    changed++;
+    if (open) open.end = i + 1;
+    else open = { start: i, end: i + 1, length: 0 };
+  }
+  close();
+  for (const r of ranges) r.length = r.end - r.start;
+
+  return {
+    identical: a.length === b.length && changed === 0,
+    size_a: a.length,
+    size_b: b.length,
+    compared_bytes: common,
+    changed_bytes: changed,
+    tail_bytes: Math.abs(a.length - b.length),
+    ranges,
+    ranges_total: total,
+  };
+}

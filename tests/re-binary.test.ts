@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   classifyEntropy,
   decodeStruct,
+  diffByteRanges,
   encodePointer,
   findAll,
   findDataXrefs,
@@ -223,5 +224,58 @@ describe("locateStringVaddrs / findDataXrefs", () => {
     const layout = parseLayout("ptr:a,u32:b", 4);
     expect(() => findDataXrefs(img, sections, 1, { pointerSize: 4, layout, pointerField: "nope", limit: 1 })).toThrow(/not in the layout/);
     expect(() => findDataXrefs(img, sections, 1, { pointerSize: 4, layout, pointerField: "b", limit: 1 })).toThrow(/must be a ptr field/);
+  });
+});
+
+describe("diffByteRanges", () => {
+  const of = (...xs: number[]) => Uint8Array.from(xs);
+
+  it("reports identical buffers as identical", () => {
+    const d = diffByteRanges(of(1, 2, 3), of(1, 2, 3));
+    expect(d).toMatchObject({ identical: true, changed_bytes: 0, ranges: [], ranges_total: 0, tail_bytes: 0 });
+  });
+
+  it("finds a single changed byte", () => {
+    const d = diffByteRanges(of(1, 2, 3), of(1, 9, 3));
+    expect(d.identical).toBe(false);
+    expect(d.changed_bytes).toBe(1);
+    expect(d.ranges).toEqual([{ start: 1, end: 2, length: 1 }]);
+  });
+
+  it("merges runs separated by fewer than mergeGap equal bytes", () => {
+    //            idx 0  1  2  3  4      differing at 0 and 2, one equal byte between
+    const a = of(1, 5, 1, 5, 5);
+    const b = of(9, 5, 9, 5, 5);
+    expect(diffByteRanges(a, b, { mergeGap: 8 }).ranges).toEqual([{ start: 0, end: 3, length: 3 }]);
+    // with no tolerance for gaps, the same change is two ranges
+    expect(diffByteRanges(a, b, { mergeGap: 1 }).ranges).toEqual([
+      { start: 0, end: 1, length: 1 },
+      { start: 2, end: 3, length: 1 },
+    ]);
+  });
+
+  it("counts changed bytes separately from merged range length", () => {
+    const d = diffByteRanges(of(1, 5, 1), of(9, 5, 9), { mergeGap: 8 });
+    expect(d.changed_bytes).toBe(2);
+    expect(d.ranges[0].length).toBe(3);
+  });
+
+  it("caps the range list but still counts every range", () => {
+    const a = new Uint8Array(100);
+    const b = new Uint8Array(100);
+    for (let i = 0; i < 100; i += 20) b[i] = 1;
+    const d = diffByteRanges(a, b, { mergeGap: 1, max: 2 });
+    expect(d.ranges).toHaveLength(2);
+    expect(d.ranges_total).toBe(5);
+    expect(d.changed_bytes).toBe(5);
+  });
+
+  it("compares only the common prefix and reports the tail", () => {
+    const d = diffByteRanges(of(1, 2), of(1, 2, 3, 4));
+    expect(d).toMatchObject({ identical: false, compared_bytes: 2, changed_bytes: 0, tail_bytes: 2, size_a: 2, size_b: 4 });
+  });
+
+  it("handles empty input", () => {
+    expect(diffByteRanges(of(), of())).toMatchObject({ identical: true, compared_bytes: 0 });
   });
 });
