@@ -58,10 +58,23 @@ export const TOOL_GROUPS: Readonly<Record<string, string>> = {
   get_health_agent_skill: "health",
   get_worktree_skill: "health",
   get_playwright_skill: "health",
+  get_re_skill: "health",
   summarize_mcp_errors: "health",
   mark_mcp_pattern_resolved: "health",
   record_pattern_note: "health",
   mark_pattern_note: "health",
+  // re: static binary reverse-engineering. OPT-IN group (see OPT_IN_GROUPS),
+  // same reasoning as browser — analyzer output can be large and the tools
+  // operate on untrusted input, so they stay out of the default surface;
+  // the main context carries only the lightweight get_re_skill getter.
+  bin_identify: "re",
+  bin_strings: "re",
+  bin_imports_exports: "re",
+  bin_functions: "re",
+  bin_disassemble: "re",
+  bin_decompile: "re",
+  bin_patch_bytes: "re",
+  bin_diff: "re",
 };
 
 // Opt-in groups are excluded under the default (matchAll) selector: their tools
@@ -71,7 +84,7 @@ export const TOOL_GROUPS: Readonly<Record<string, string>> = {
 // sibling `mcp-skills-browser` config entry with MCP_SKILLS_SELECT=browser. The
 // `browser` slice is agent-guarded this way; the main context sees only the
 // lightweight get_playwright_skill getter (health group).
-export const OPT_IN_GROUPS: ReadonlySet<string> = new Set(["browser", "apps"]);
+export const OPT_IN_GROUPS: ReadonlySet<string> = new Set(["browser", "apps", "re"]);
 
 // MCP Apps slice: the ops_console tool plus its ui:// resource (registered in
 // server.ts behind this same group so tool and resource always travel together).
@@ -93,5 +106,6 @@ export const GROUPS: readonly string[] = [
   "release",
   "health",
   "apps",
+  "re",
   RESOURCE_GROUP,
 ];

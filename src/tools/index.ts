@@ -25,6 +25,15 @@ import { registerWorktreeSkillTool } from "./worktree.js";
 import { registerPlaywrightSessionTools } from "./playwright-session.js";
 import { registerPlaywrightSkillTool } from "./playwright-skill.js";
 import { registerOpsConsoleTool } from "./ops-console.js";
+import { registerReSkillTool } from "./re-skill.js";
+import { registerBinIdentifyTool } from "./re-identify.js";
+import { registerBinStringsTool } from "./re-strings.js";
+import { registerBinImportsExportsTool } from "./re-imports.js";
+import { registerBinFunctionsTool } from "./re-functions.js";
+import { registerBinDisassembleTool } from "./re-disassemble.js";
+import { registerBinDecompileTool } from "./re-decompile.js";
+import { registerBinPatchBytesTool } from "./re-patch-bytes.js";
+import { registerBinDiffTool } from "./re-diff.js";
 
 export const registerTools = (server: McpServer) => {
   registerGetVersionTool(server);
@@ -53,4 +62,13 @@ export const registerTools = (server: McpServer) => {
   registerPlaywrightSkillTool(server);
   registerPlaywrightSessionTools(server);
   registerOpsConsoleTool(server);
+  registerReSkillTool(server);
+  registerBinIdentifyTool(server);
+  registerBinStringsTool(server);
+  registerBinImportsExportsTool(server);
+  registerBinFunctionsTool(server);
+  registerBinDisassembleTool(server);
+  registerBinDecompileTool(server);
+  registerBinPatchBytesTool(server);
+  registerBinDiffTool(server);
 };
