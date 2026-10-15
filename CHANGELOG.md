@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.3.2] - 2026-10-15
+
+- Ship the Ghidra scripts used by bin_decompile and bin_xref_decompile inside the package instead of resolving them from ~/tools/ghidra-scripts, so both tools work on any install; a missing script now names the absent file.
+
 ## [2.3.1] - 2026-10-15
 
 - bin_diff now reports a byte-level diff alongside the function diff, attributing each changed byte range to the function containing it, so a patch outside radare2's detected functions can no longer read as an unchanged binary.
