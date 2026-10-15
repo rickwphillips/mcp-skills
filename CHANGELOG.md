@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.2.0] - 2026-10-15
+
+- Add opt-in `re` tool slice: static binary reverse-engineering (bin_identify, bin_strings, bin_imports_exports, bin_functions, bin_disassemble, bin_decompile, bin_patch_bytes, bin_diff) backed by radare2, Ghidra headless, and LIEF.
+
 ## [2.1.1] - 2026-10-07
 
 - Fix: isError tool results now name their specific cause (e.g. "PREFLIGHT_FAILED: missing migration file", "PARTIAL_FAILURE: ssh connection reset by host") instead of all sharing one generic "isError flag set on tool result" audit pattern. Each cause gets its own pattern, so triage notes no longer auto-demote within a few deploys. New failure-cause module; falls back to the generic label when nothing is recognizable.
