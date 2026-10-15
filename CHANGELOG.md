@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.3.1] - 2026-10-15
+
+- bin_diff now reports a byte-level diff alongside the function diff, attributing each changed byte range to the function containing it, so a patch outside radare2's detected functions can no longer read as an unchanged binary.
+
 ## [2.3.0] - 2026-10-15
 
 - Add bin_entropy (per-section entropy, flags packed/encrypted code), bin_xref_decompile (decompile functions that reference a string), and bin_data_xref (find stored pointers and decode the enclosing struct) to the opt-in re slice; add tests for the RE lib helpers.
