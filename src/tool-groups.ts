@@ -75,6 +75,9 @@ export const TOOL_GROUPS: Readonly<Record<string, string>> = {
   bin_decompile: "re",
   bin_patch_bytes: "re",
   bin_diff: "re",
+  bin_entropy: "re",
+  bin_xref_decompile: "re",
+  bin_data_xref: "re",
 };
 
 // Opt-in groups are excluded under the default (matchAll) selector: their tools

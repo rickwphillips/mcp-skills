@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { homedir } from "node:os";
+import { parseRabinSections, type Section } from "./re-binary.js";
 
 /**
  * Shared process-exec helper for the binary-reverse-engineering (`re`) tool
@@ -99,4 +100,23 @@ export const RE_TOOLS = {
 
 export function toolExists(path: string): boolean {
   return existsSync(path);
+}
+
+/** MCP tool result carrying one pretty-printed JSON body. */
+export function reJson(body: Record<string, unknown>, isError = false) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(body, null, 2) }],
+    ...(isError ? { isError: true } : {}),
+  };
+}
+
+/** Section table via rabin2 `-Sj`; empty when rabin2 can't parse the file. */
+export async function readSections(abs: string): Promise<Section[]> {
+  const res = await runRe("rabin2", ["-Sj", abs]);
+  if (res.exit_code !== 0 || !res.stdout.trim()) return [];
+  try {
+    return parseRabinSections(res.stdout);
+  } catch {
+    return [];
+  }
 }

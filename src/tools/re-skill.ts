@@ -3,9 +3,11 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 const RE_SKILL = `# Binary reverse-engineering skill (opt-in \`re\` slice)
 
 Static-first binary analysis: identify, extract strings, list imports/exports,
-find functions, disassemble, decompile, patch-and-verify, and diff. The tools —
-\`bin_identify\`, \`bin_strings\`, \`bin_imports_exports\`, \`bin_functions\`,
-\`bin_disassemble\`, \`bin_decompile\`, \`bin_patch_bytes\`, \`bin_diff\` — do NOT
+find functions, disassemble, decompile, patch-and-verify, and diff, plus
+entropy and string/data cross-references. The tools — \`bin_identify\`,
+\`bin_strings\`, \`bin_imports_exports\`, \`bin_functions\`, \`bin_disassemble\`,
+\`bin_decompile\`, \`bin_patch_bytes\`, \`bin_diff\`, \`bin_entropy\`,
+\`bin_xref_decompile\`, \`bin_data_xref\` — do NOT
 load into the default context. They live in the opt-in **\`re\`** slice so their
 schemas and the (sometimes large) analysis output stay out of the main
 conversation. This getter is the only \`re\` surface in the default context.
@@ -64,6 +66,29 @@ Same pattern as the \`browser\` slice:
    changed exactly the function you intended and nothing else — or to
    compare two builds/versions directly.
 
+## Finding code that has no symbol name
+
+Most interesting functions in a stripped binary are unexported. Before
+reaching for bin_functions, check whether static analysis can see the code
+at all, then use what the code prints or what points at it:
+
+- \`bin_entropy({ input })\` — per-section entropy. An executable section
+  near 8.0 bits/byte is packed or encrypted on disk: disassembly, xrefs and
+  decompilation of it will all come back empty or garbage, and the only
+  static fix is unpacking. Low entropy in a data section is normal (tables,
+  padding). Run this early on anything that looks protected.
+- \`bin_xref_decompile({ input, string })\` — functions whose CODE
+  references a string (a log line, an error message, an assert's file
+  path), decompiled. The quickest route to an unexported function that
+  prints something distinctive. Pick the string with bin_strings first.
+- \`bin_data_xref({ input, string|vaddr, layout })\` — where an address is
+  stored as a pointer in DATA, with the surrounding struct decoded. For
+  functions reached only through a table (command/handler registrations,
+  vtables, plugin descriptors): find the entry's name string, decode the
+  record with a layout, read the handler pointer out of it, then
+  bin_decompile that address. If you have the source or headers for the
+  struct, take the layout from them; otherwise infer it from a few hits.
+
 ## Reporting back
 
 From the guard: what was analyzed, the concrete finding (format, suspicious
@@ -80,10 +105,11 @@ export function registerReSkillTool(server: McpServer): void {
         "Returns the agent-guarded static binary-analysis workflow as prose. Fetch this when you need to " +
         "identify, inspect, disassemble, decompile, patch-and-verify, or diff a binary (ELF/PE/Mach-O). " +
         "The live tools (bin_identify/bin_strings/bin_imports_exports/bin_functions/bin_disassemble/" +
-        "bin_decompile/bin_patch_bytes/bin_diff) are NOT on the default surface — they live in the opt-in " +
+        "bin_decompile/bin_patch_bytes/bin_diff/bin_entropy/bin_xref_decompile/bin_data_xref) are NOT on the default surface — they live in the opt-in " +
         "`re` slice; this skill explains how to reach them via a forked sub-agent or a " +
         "MCP_SKILLS_SELECT=re server entry, and embeds the identify→strings→imports→functions→" +
-        "disassemble→decompile→patch→diff workflow plus the static-only ground rules.",
+        "disassemble→decompile→patch→diff workflow, how to find unexported code via entropy and " +
+        "string/data cross-references, plus the static-only ground rules.",
       inputSchema: {},
     },
     async () => ({

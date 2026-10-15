@@ -34,6 +34,9 @@ import { registerBinDisassembleTool } from "./re-disassemble.js";
 import { registerBinDecompileTool } from "./re-decompile.js";
 import { registerBinPatchBytesTool } from "./re-patch-bytes.js";
 import { registerBinDiffTool } from "./re-diff.js";
+import { registerBinEntropyTool } from "./re-entropy.js";
+import { registerBinXrefDecompileTool } from "./re-xref-decompile.js";
+import { registerBinDataXrefTool } from "./re-data-xref.js";
 
 export const registerTools = (server: McpServer) => {
   registerGetVersionTool(server);
@@ -71,4 +74,7 @@ export const registerTools = (server: McpServer) => {
   registerBinDecompileTool(server);
   registerBinPatchBytesTool(server);
   registerBinDiffTool(server);
+  registerBinEntropyTool(server);
+  registerBinXrefDecompileTool(server);
+  registerBinDataXrefTool(server);
 };

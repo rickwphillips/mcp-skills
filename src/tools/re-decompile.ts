@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { resolveTargetPath } from "../lib/re-exec.js";
-import { runGhidraHeadless } from "../lib/ghidra-headless.js";
+import { extractMarkedBlocks, runGhidraHeadless, scriptLines } from "../lib/ghidra-headless.js";
 
 const START = "===MCP_SKILLS_DECOMPILE_START===";
 const END = "===MCP_SKILLS_DECOMPILE_END===";
@@ -47,15 +47,10 @@ export const registerBinDecompileTool = (server: McpServer) => {
         };
       }
 
-      const startIdx = result.stdout.indexOf(START);
-      const endIdx = result.stdout.indexOf(END);
+      const [block] = extractMarkedBlocks(result.stdout, "DecompileFunction.java", START, END);
 
-      if (startIdx === -1 || endIdx === -1) {
-        const errLine = result.stdout
-          .split("\n")
-          .find((l) => l.includes("DecompileFunction.java>") && l.includes("ERROR:"))
-          ?.replace(/^.*DecompileFunction\.java>\s?/, "")
-          .replace(/\s*\(GhidraScript\)\s*$/, "");
+      if (block === undefined) {
+        const errLine = scriptLines(result.stdout, "DecompileFunction.java", "ERROR: ")[0];
         return {
           content: [
             {
@@ -76,17 +71,6 @@ export const registerBinDecompileTool = (server: McpServer) => {
           isError: true,
         };
       }
-
-      // Ghidra's headless logger wraps a println() CALL, not each line it
-      // prints: a multi-line call (the decompiled C itself) only gets the
-      // "INFO  DecompileFunction.java> " prefix once at its start and the
-      // " (GhidraScript)" suffix once at its end, with the real content's
-      // own newlines passed through untouched in between. Strip both marker
-      // patterns globally rather than per-line.
-      let block = result.stdout.slice(startIdx + START.length, endIdx);
-      block = block.replace(/(^|\n)INFO\s+DecompileFunction\.java>\s?/g, "\n");
-      block = block.replace(/\s*\(GhidraScript\)\s*(\n|$)/g, "$1");
-      block = block.trim();
 
       const nameLine = block.match(/^FUNCTION:\s*(.+)/);
 
