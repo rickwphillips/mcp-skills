@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.3.0] - 2026-10-15
+
+- Add bin_entropy (per-section entropy, flags packed/encrypted code), bin_xref_decompile (decompile functions that reference a string), and bin_data_xref (find stored pointers and decode the enclosing struct) to the opt-in re slice; add tests for the RE lib helpers.
+
 ## [2.2.0] - 2026-10-15
 
 - Add opt-in `re` tool slice: static binary reverse-engineering (bin_identify, bin_strings, bin_imports_exports, bin_functions, bin_disassemble, bin_decompile, bin_patch_bytes, bin_diff) backed by radare2, Ghidra headless, and LIEF.
